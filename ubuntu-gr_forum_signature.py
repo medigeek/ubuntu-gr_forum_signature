@@ -22,7 +22,7 @@
 """Example of signature:
 Γνώσεις ⇛ Linux: Άγνωστο ┃ Προγραμματισμός: Άγνωστο ┃ Αγγλικά: Άγνωστο
 Λειτουργικό: Ubuntu 10.10 64-bit (en_GB.utf8)
-Προδιαγραφές ⇛ Intel Core 2 Duo E6550 2.33GHz │ RAM 2008 │ nVidia G73 [GeForce 7300 GT]│ Μητρική: MSI MS-7235
+Προδιαγραφές ⇛ Intel Core 2 Duo E6550 2.33GHz │ RAM 2008 MiB │ nVidia G73 [GeForce 7300 GT]│ Μητρική: MSI MS-7235
 """
 
 import sys
