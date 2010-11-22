@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # File: ubuntu-gr_signature.py
+# Purpose: Proposes a signature with useful hardware/software information to forum newcomers/newbies
 # Requires: python 2.5, lshw, sudo (for motherboard chip recognition)
 
 # Copyright (c) 2010 Savvas Radevic <vicedar@gmail.com>
@@ -19,9 +20,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Example of signature:
-Κύπριος; Κόπιασε στο ubuntu-cy! ┃ Launchpad Debian Github Identica
-Οδηγός για νεοεισερχόμενους: viewtopic.php?f=2&t=279
-
 Γνώσεις ⇛ Linux: Άγνωστο ┃ Προγραμματισμός: Άγνωστο ┃ Αγγλικά: Άγνωστο
 Λειτουργικό: Ubuntu 10.10 64-bit (en_GB.utf8)
 Προδιαγραφές ⇛ Intel Core 2 Duo E6550 2.33GHz │ RAM 2008 │ nVidia G73 [GeForce 7300 GT]│ Μητρική: MSI MS-7235
