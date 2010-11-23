@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 # File: ubuntu-gr_signature.py
 # Purpose: Proposes a signature with useful hardware/software information to forum newcomers/newbies
-# Requires: python 2.5, lshw, sudo (for motherboard chip recognition)
+# Requires: python 2.5, lshw, lsb-release, sudo (for motherboard chip recognition)
+
+# DEBUG: sudo lshw -xml -sanitize | pastebinit -b "http://pastebin.com"
 
 # Copyright (c) 2010 Savvas Radevic <vicedar@gmail.com>
 #
@@ -75,31 +77,39 @@ class core():
             arch_type, lang))
 
     def oslang(self):
-        #cat /etc/environment
-        lines = self.getfile("/etc/environment")
-        lang = "en_US"
-        for l in lines:
-            lx = l.split("=")
-            if lx[0] == "LANG":
-                lang = lx[1].strip('"\n')
-        return lang
+        try:
+            lang = os.environ["LANG"]
+        except KeyError:
+            # Assume en_US
+            lang = "en_US"
+        return lang  
+#        cat /etc/environment
+#        lines = self.getfile("/etc/environment")
+#        lang = "en_US"
+#        for l in lines:
+#            lx = l.split("=")
+#            if lx[0] == "LANG":
+#                lang = lx[1].strip('"\n')
+#        return lang
 
     def machinearch(self):
         output = os.uname()[4]
         if output == "x86_64":
             mtype = "64-bit"
-        elif output == "x86":
+        elif re.match(r'i686|i386', output):
             mtype = "32-bit"
         else:
             mtype = "x-bit"
         return mtype
 
     def specs(self):
-        print( u'Προδιαγραφές ⇛ %s │ RAM %s MiB │ %s│ Μητρική: %s' %
+        print( u'Προδιαγραφές ⇛ %s │ RAM %s MiB │ %s│ Μητρική: %s (%s)' %
                 (self.lshwinfo["cpu"],
                 self.lshwinfo["memory"],
                 self.lshwinfo["display"],
-                self.lshwinfo["system"])
+                self.lshwinfo["system"],
+                self.lshwinfo["core"]
+                )
         )
 
     def cpuinfo(self):
@@ -127,6 +137,7 @@ class core():
                 self.lshwxml = '\n'.join(lines)
             doc = xml.dom.minidom.parseString(self.lshwxml)
             nodes = doc.getElementsByTagName("node")
+            found_motherboard = False # Use alternative motherboard recognition data
             for n in nodes:
                 if n.hasAttribute("class") and n.getAttribute("class") == "system":
                     #<product>MS-7235</product><vendor>MICRO-STAR INTERNATIONAL CO.,LTD</vendor>
@@ -139,11 +150,29 @@ class core():
                         temp_final2 = "Gigabyte"
                     else:
                         temp_final2 = tempa2
+                    if temp_final2 != "To Be Filled By O.E.M.":
+                        found_motherboard = True
                     self.lshwinfo["system"] = "%s %s" % (temp_final2, tempa1)
                     #print("MOO: %s %s" % (tempa1, tempa2))
-                    
+                
                 if n.hasAttribute("id"):
-                    if n.getAttribute("id") == "cpu":
+                    if n.getAttribute("id") == "core":
+                        #if not found_motherboard:
+                        #<product>MS-7235</product><vendor>MICRO-STAR INTERNATIONAL CO.,LTD</vendor>
+                        #product: G31M-S2L - vendor: Gigabyte Technology Co., Ltd.
+                        tempa1 = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
+                        tempa2 = n.getElementsByTagName("vendor")[0].childNodes[0].nodeValue
+                        if re.match(r'MICRO-STAR INTERNATIONAL', tempa2, re.IGNORECASE):
+                            temp_final2 = "MSI"
+                        elif re.match(r'Gigabyte Technology', tempa2, re.IGNORECASE):
+                            temp_final2 = "Gigabyte"
+                        else:
+                            temp_final2 = tempa2
+                        if temp_final2 != "To Be Filled By O.E.M.":
+                            found_motherboard = True
+                        self.lshwinfo["core"] = "%s %s" % (temp_final2, tempa1)
+                        #print("MOO: %s %s" % (tempa1, tempa2))
+                    elif n.getAttribute("id") == "cpu":
                         tempa = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
                         if tempa[0:5] == "Intel": # Intel(R) Core(TM)2 Duo CPU     E6550  @ 2.33GHz
                             tempb = re.sub(r'\((?:R|TM)\)|CPU|@', ' ', tempa)
