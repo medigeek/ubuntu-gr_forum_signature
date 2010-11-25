@@ -129,6 +129,7 @@ class core():
                 f.close()
                 print("\n\nUsing lshw xml file: %s" % fxml)
             else:
+                # BUG: Wrong memory size with sudo? http://tinyurl.com/28q2elq
                 self.lshwxml = self.runcommand(["sudo", "lshw", "-xml"])
             # Fix bug: https://bugs.launchpad.net/bugs/512251
             lines = self.lshwxml.split("\n")
@@ -157,6 +158,8 @@ class core():
                     temp_final2 = "Intel"
                 elif re.match(r'American Megatrends', tempa2, re.IGNORECASE):
                     temp_final2 = "AMI?"
+                elif re.match(r'Phoenix Technologies', tempa2, re.IGNORECASE):
+                    temp_final2 = "Phoenix"
                 else:
                     temp_final2 = tempa2
                 if temp_final2 != "To Be Filled By O.E.M." and temp_final2 != "System manufacturer":
@@ -189,6 +192,8 @@ class core():
                         temp_final2 = "Intel"
                     elif re.match(r'American Megatrends', tempa2, re.IGNORECASE):
                         temp_final2 = "AMI?"
+                    elif re.match(r'Phoenix Technologies LTD', tempa2, re.IGNORECASE):
+                        temp_final2 = "Phoenix"
                     else:
                         temp_final2 = tempa2
                     if temp_final2 != "To Be Filled By O.E.M." and temp_final2 != "System manufacturer":
@@ -227,6 +232,8 @@ class core():
                         temp_final2 = re.sub(r'(?i)\sCorporation', '', tempa2)
                     elif tempa2[0:3] == "ATI":
                         temp_final2 = re.sub(r'(?i)\sTechnologies\sInc', '', tempa2)
+                    elif tempa2[0:5] == "Intel":
+                        temp_final2 = re.sub(r'(?i)Intel Corporation', 'Intel', tempa2)
                     else:
                         temp_final2 = tempa2
 
