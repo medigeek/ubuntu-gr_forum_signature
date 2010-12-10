@@ -29,6 +29,8 @@
 Δίκτυα: Ethernet: Realtek RTL-8139/8139C/8139C+ [10EC:8139], Ethernet: Realtek RTL-8110SC/8169SC Gigabit Ethernet [10EC:8167]
 """
 
+# TODO: os.getenv('DESKTOP_SESSION', None)
+
 import sys
 
 if sys.version < '2.5':
@@ -36,12 +38,17 @@ if sys.version < '2.5':
 if sys.platform and sys.platform[0:5] != "linux":
     sys.exit('ERROR: This script is built for GNU/Linux platforms (for now)')
 
-import subprocess
 import os
-import xml.dom.minidom
 import re
+import subprocess
+import xml.dom.minidom
 
-class core():
+import pygtk
+pygtk.require('2.0')
+import gtk
+import gobject
+
+class core:
     def __init__(self, fxml=""):
         self.unknown = u"�" # Character/string for unknown data
         self.lshwxml = ""
@@ -54,18 +61,26 @@ class core():
             "network": list(self.unknown),
         }
         self.lshw(fxml)
-        self.knowledge()
-        self.osinfo()
-        self.specs()
+
+    def printall(self):
+        x = self.knowledge()
+        y = self.osinfo()
+        z = self.specs()
+        print(u"%s\n%s\n%s" % (x, y, z))
+
+    def returnall(self):
+        x = self.knowledge()
+        y = self.osinfo()
+        z = self.specs()
+        return u"%s\n%s\n%s" % (x, y, z)
 
     def knowledge(self):
         s = {   "linux": self.unknown,
                 "programming": self.unknown,
                 "english": self.unknown
             }
-        print( u"Γνώσεις ⇛ Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" %
+        return u"Γνώσεις ⇛ Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
                 (s["linux"], s["programming"], s["english"])
-        )
 
     def osinfo(self):
         lines = self.getfile("/etc/lsb-release")
@@ -78,26 +93,21 @@ class core():
                 distrib["rel"] = lx[1].rstrip("\n")
         lang = self.oslang()
         arch_type = self.machinearch()
-        print(u"Λειτουργικό: %s %s %s (%s)" % (distrib["id"], distrib["rel"],
-            arch_type, lang))
+        return u"Λειτουργικό: %s %s %s (%s)" % \
+                (distrib["id"], distrib["rel"], arch_type, lang)
 
     def specs(self):
         machine = self.shortenmachineid()
-        print( u'Προδιαγραφές ⇛ %s │ RAM %s MiB │ %s\nΚάρτες γραφικών: %s\nΔίκτυα: %s' %
+        return u'Προδιαγραφές ⇛ %s │ RAM %s MiB │ %s\nΚάρτες γραφικών: %s\nΔίκτυα: %s' % \
                 (self.lshwinfo["cpu"],
                 self.lshwinfo["memory"],
                 machine,
                 ', '.join(self.lshwinfo["display"]),
                 ', '.join(self.lshwinfo["network"])
                 )
-        )
 
     def oslang(self):
-        try:
-            lang = os.environ["LANG"]
-        except KeyError:
-            # Assume en_US
-            lang = "en_US"
+        lang = os.getenv("LANG", "en_US") # Assume en_US if LANG var not set
         return lang  
 
     def machinearch(self):
@@ -317,6 +327,26 @@ class core():
         f.close()
         return lines
 
+class siggui:
+    """ The graphical user interface for timekpr configuration. """
+    def __init__(self, text):
+        self.uifile = "ubuntu-gr_forum_signature.glade"
+        self.builder = gtk.Builder()
+        self.builder.add_from_file(self.uifile)
+        dic = {
+            "on_button1_clicked" : self.button1_clicked,
+            "on_button2_clicked" : gtk.main_quit,
+            "on_window1_destroy" : gtk.main_quit,
+        }
+        self.builder.connect_signals(dic)
+        self.window = self.builder.get_object("window1")
+        self.textbox = self.builder.get_object("textview1")
+        self.textboxbuf = self.textbox.get_buffer()
+        self.textboxbuf.set_text(text)
+        #self.window.show()
+
+    def button1_clicked(self, widget):
+        print("WOOO!")
 
 def main():
     #Argument: lshw xml filename (for testing)
@@ -324,7 +354,9 @@ def main():
         arg = sys.argv[1]
     except IndexError:
         arg = ""
-    core(fxml=arg)
+    text = core(fxml=arg).returnall()
+    siggui(text)
+    gtk.main()
 
 if __name__ == "__main__":
     main()
