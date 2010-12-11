@@ -29,8 +29,6 @@
 Δίκτυα: Ethernet: Realtek RTL-8139/8139C/8139C+ [10EC:8139], Ethernet: Realtek RTL-8110SC/8169SC Gigabit Ethernet [10EC:8167]
 """
 
-# TODO: os.getenv('DESKTOP_SESSION', None)
-
 import sys
 
 if sys.version < '2.5':
@@ -120,6 +118,18 @@ class core:
             mtype = "%s-bit" % self.unknown
         return mtype
 
+    def choosesudo(self):
+        x = os.getenv('DESKTOP_SESSION', None)
+        if x:
+            if x == "gnome":
+                return "gksu"
+            if x == "kde" or x == "kde4":
+                return "kdesudo"
+            else: #Unknown sudo for other desktop managers
+                return "sudo"
+        else:
+            return "sudo" # console session
+
     def shortenmachineid(self):
         # Shorten the machine/motherboard id and manufacturer
         if self.lshwinfo["system"] == self.lshwinfo["core"] and not self.lshwinfo["system"] == self.unknown:
@@ -160,13 +170,15 @@ class core:
                 print("\n\nUsing lshw xml file: %s" % fxml)
             else:
                 # BUG: Wrong memory size with sudo? http://tinyurl.com/28q2elq
-                self.lshwxml = self.runcommand(["sudo", "lshw", "-xml" , "-sanitize", "-numeric"])
+                sudocmd = self.choosesudo()
+                self.lshwxml = self.runcommand([sudocmd, "--", "lshw", "-quiet", "-xml" , "-sanitize", "-numeric"])
             # Fix bug: https://bugs.launchpad.net/bugs/512251
             lines = self.lshwxml.split("\n")
             for l in lines:
                 if re.search(r'id="lastmountpoint"', l):
                     lines.remove(l)
             self.lshwxml = '\n'.join(lines)
+
         doc = xml.dom.minidom.parseString(self.lshwxml)
         nodes = doc.getElementsByTagName("node")
         found_motherboard = False # Use alternative motherboard recognition data
@@ -330,6 +342,7 @@ class core:
 class siggui:
     """ The graphical user interface for timekpr configuration. """
     def __init__(self, text):
+        self.unknown = u"�"
         self.uifile = "ubuntu-gr_forum_signature.glade"
         self.builder = gtk.Builder()
         self.builder.add_from_file(self.uifile)
@@ -337,16 +350,43 @@ class siggui:
             "on_button1_clicked" : self.button1_clicked,
             "on_button2_clicked" : gtk.main_quit,
             "on_window1_destroy" : gtk.main_quit,
+            "on_comboboxentry1_changed": self.knowledgeline,
+            "on_comboboxentry2_changed": self.knowledgeline,
+            "on_comboboxentry3_changed": self.knowledgeline,
         }
         self.builder.connect_signals(dic)
         self.window = self.builder.get_object("window1")
         self.textbox = self.builder.get_object("textview1")
         self.textboxbuf = self.textbox.get_buffer()
         self.textboxbuf.set_text(text)
+        self.comboboxlinux = self.builder.get_object("comboboxentry1")
+        self.comboboxprogramming = self.builder.get_object("comboboxentry2")
+        self.comboboxenglish = self.builder.get_object("comboboxentry3")
         #self.window.show()
 
     def button1_clicked(self, widget):
         print("WOOO!")
+
+    def knowledgeline(self, widget):
+        linux = self.comboboxlinux.get_active_text()
+        programming = self.comboboxprogramming.get_active_text()
+        english = self.comboboxenglish.get_active_text()
+        line = u"Γνώσεις ⇛ Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+            (linux, programming, english)
+        start, end = self.textboxbuf.get_bounds()
+        oldtext = self.textboxbuf.get_text(start, end) # get all text
+        newtext = re.subn(
+            r'Γνώσεις ⇛ Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
+            line,
+            oldtext
+        ) # newtext is a touple ("newstring", times_of_substitution)
+        if newtext[1] > 0: # If substitutions took place
+            self.textboxbuf.set_text(newtext[0])
+        else: # If no substitutions took place
+            if oldtext == "":
+                self.textboxbuf.set_text(line)
+            else:
+                self.textboxbuf.set_text("%s\n%s" % (oldtext, line))
 
 def main():
     #Argument: lshw xml filename (for testing)
@@ -360,4 +400,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

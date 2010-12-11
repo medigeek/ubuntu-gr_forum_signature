@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <!-- interface-requires gtk+ 2.10 -->
+  <!-- interface-requires gtk+ 2.12 -->
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="window1">
     <property name="width_request">600</property>
-    <property name="height_request">200</property>
+    <property name="height_request">250</property>
     <property name="visible">True</property>
     <property name="title" translatable="yes">Forum signature generator</property>
     <property name="destroy_with_parent">True</property>
@@ -13,8 +13,10 @@
     <child>
       <object class="GtkTable" id="table1">
         <property name="visible">True</property>
-        <property name="n_rows">3</property>
+        <property name="n_rows">4</property>
         <property name="n_columns">3</property>
+        <property name="column_spacing">5</property>
+        <property name="row_spacing">5</property>
         <child>
           <object class="GtkButton" id="button1">
             <property name="label">gtk-apply</property>
@@ -27,27 +29,10 @@
           <packing>
             <property name="left_attach">2</property>
             <property name="right_attach">3</property>
-            <property name="top_attach">2</property>
-            <property name="bottom_attach">3</property>
+            <property name="top_attach">3</property>
+            <property name="bottom_attach">4</property>
             <property name="y_options"></property>
-            <property name="x_padding">10</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="button2">
-            <property name="label">gtk-quit</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="use_underline">True</property>
-            <property name="use_stock">True</property>
-            <signal name="clicked" handler="on_button2_clicked"/>
-          </object>
-          <packing>
-            <property name="top_attach">2</property>
-            <property name="bottom_attach">3</property>
-            <property name="y_options"></property>
-            <property name="x_padding">10</property>
+            <property name="x_padding">5</property>
           </packing>
         </child>
         <child>
@@ -61,10 +46,10 @@
           <packing>
             <property name="left_attach">1</property>
             <property name="right_attach">2</property>
-            <property name="top_attach">2</property>
-            <property name="bottom_attach">3</property>
+            <property name="top_attach">3</property>
+            <property name="bottom_attach">4</property>
             <property name="y_options"></property>
-            <property name="x_padding">10</property>
+            <property name="x_padding">5</property>
           </packing>
         </child>
         <child>
@@ -73,6 +58,7 @@
             <property name="can_focus">True</property>
             <property name="hscrollbar_policy">automatic</property>
             <property name="vscrollbar_policy">automatic</property>
+            <property name="shadow_type">in</property>
             <child>
               <object class="GtkTextView" id="textview1">
                 <property name="visible">True</property>
@@ -83,10 +69,192 @@
           </object>
           <packing>
             <property name="right_attach">3</property>
+            <property name="top_attach">2</property>
+            <property name="bottom_attach">3</property>
+            <property name="x_padding">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="button2">
+            <property name="label">gtk-quit</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_underline">True</property>
+            <property name="use_stock">True</property>
+            <signal name="clicked" handler="on_button2_clicked"/>
+          </object>
+          <packing>
+            <property name="top_attach">3</property>
+            <property name="bottom_attach">4</property>
+            <property name="y_options"></property>
+            <property name="x_padding">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkVBox" id="vbox1">
+            <property name="visible">True</property>
+            <child>
+              <object class="GtkLabel" id="label1">
+                <property name="visible">True</property>
+                <property name="xalign">0.0099999997764825821</property>
+                <property name="yalign">1</property>
+                <property name="label" translatable="yes">Linux:</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBoxEntry" id="comboboxentry1">
+                <property name="visible">True</property>
+                <property name="model">liststorecombo1</property>
+                <property name="text_column">0</property>
+                <signal name="changed" handler="on_comboboxentry1_changed"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkVBox" id="vbox2">
+            <property name="visible">True</property>
+            <child>
+              <object class="GtkLabel" id="label2">
+                <property name="visible">True</property>
+                <property name="xalign">0.0099999997764825821</property>
+                <property name="yalign">1</property>
+                <property name="label" translatable="yes">Προγραμματισμός:</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBoxEntry" id="comboboxentry2">
+                <property name="visible">True</property>
+                <property name="model">liststorecombo2</property>
+                <property name="text_column">0</property>
+                <signal name="changed" handler="on_comboboxentry2_changed"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="right_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkVBox" id="vbox3">
+            <property name="visible">True</property>
+            <child>
+              <object class="GtkLabel" id="label3">
+                <property name="visible">True</property>
+                <property name="xalign">0.0099999997764825821</property>
+                <property name="yalign">1</property>
+                <property name="label" translatable="yes">Αγγλικά:</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBoxEntry" id="comboboxentry3">
+                <property name="visible">True</property>
+                <property name="model">liststorecombo3</property>
+                <property name="text_column">0</property>
+                <signal name="changed" handler="on_comboboxentry3_changed"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="right_attach">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label4">
+            <property name="visible">True</property>
+            <property name="xalign">0.0099999997764825821</property>
+            <property name="label" translatable="yes">Υπογραφή:</property>
+          </object>
+          <packing>
+            <property name="top_attach">1</property>
             <property name="bottom_attach">2</property>
           </packing>
         </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
       </object>
     </child>
+  </object>
+  <object class="GtkListStore" id="liststorecombo1">
+    <columns>
+      <!-- column-name gchararray1 -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Αρχάριος</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Μέτριος</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Προχωρημένος</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="liststorecombo2">
+    <columns>
+      <!-- column-name gchararray1 -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Αρχάριος</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Μέτριος</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Προχωρημένος</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="liststorecombo3">
+    <columns>
+      <!-- column-name gchararray1 -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Αρχάριος</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Μέτριος</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Προχωρημένος</col>
+      </row>
+    </data>
   </object>
 </interface>
