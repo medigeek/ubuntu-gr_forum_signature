@@ -459,9 +459,9 @@ def main():
     except IndexError:
         arg = ""
     text = core(fxml=arg).returnall()
-    print(text)
-    #siggui(text)
-    #gtk.main()
+    #print(text)
+    siggui(text)
+    gtk.main()
 
 if __name__ == "__main__":
     main()
