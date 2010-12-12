@@ -138,7 +138,7 @@
             <child>
               <object class="GtkComboBoxEntry" id="comboboxentry2">
                 <property name="visible">True</property>
-                <property name="model">liststorecombo2</property>
+                <property name="model">liststorecombo1</property>
                 <property name="text_column">0</property>
                 <signal name="changed" handler="on_comboboxentry2_changed"/>
               </object>
@@ -171,7 +171,7 @@
             <child>
               <object class="GtkComboBoxEntry" id="comboboxentry3">
                 <property name="visible">True</property>
-                <property name="model">liststorecombo3</property>
+                <property name="model">liststorecombo1</property>
                 <property name="text_column">0</property>
                 <signal name="changed" handler="on_comboboxentry3_changed"/>
               </object>
@@ -213,39 +213,8 @@
     </columns>
     <data>
       <row>
-        <col id="0" translatable="yes">Αρχάριος</col>
+        <col id="0" translatable="yes">Καθόλου</col>
       </row>
-      <row>
-        <col id="0" translatable="yes">Μέτριος</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Προχωρημένος</col>
-      </row>
-    </data>
-  </object>
-  <object class="GtkListStore" id="liststorecombo2">
-    <columns>
-      <!-- column-name gchararray1 -->
-      <column type="gchararray"/>
-    </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes">Αρχάριος</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Μέτριος</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Προχωρημένος</col>
-      </row>
-    </data>
-  </object>
-  <object class="GtkListStore" id="liststorecombo3">
-    <columns>
-      <!-- column-name gchararray1 -->
-      <column type="gchararray"/>
-    </columns>
-    <data>
       <row>
         <col id="0" translatable="yes">Αρχάριος</col>
       </row>
