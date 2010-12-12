@@ -132,7 +132,7 @@ class core:
 
     def shortenmachineid(self):
         # Shorten the machine/motherboard id and manufacturer
-        if self.lshwinfo["system"] == self.lshwinfo["core"] and not self.lshwinfo["system"] == self.unknown:
+        if self.lshwinfo["system"] == self.lshwinfo["core"]:
             machine = self.lshwinfo["system"]
         elif self.lshwinfo["system"] == self.unknown and not self.lshwinfo["core"] == self.unknown:
             machine = self.lshwinfo["core"]
@@ -156,6 +156,8 @@ class core:
             temp_final2 = "AMI?"
         elif re.match(r'Phoenix Technologies', tempa2, re.IGNORECASE):
             temp_final2 = "Phoenix"
+        elif re.match(r"InnoTek", tempa2, re.IGNORECASE):
+            temp_final2 = "Innotek"
         else:
             temp_final2 = tempa2
         return temp_final2
@@ -181,49 +183,104 @@ class core:
 
         doc = xml.dom.minidom.parseString(self.lshwxml)
         nodes = doc.getElementsByTagName("node")
-        found_motherboard = False # Use alternative motherboard recognition data
         for n in nodes:
             if n.hasAttribute("class") and \
                 n.getAttribute("class") == "system" and \
                 n.hasAttribute("handle") and n.getAttribute("handle") == "DMI:0001":
                 #<product>MS-7235</product><vendor>MICRO-STAR INTERNATIONAL CO.,LTD</vendor>
                 #product: G31M-S2L - vendor: Gigabyte Technology Co., Ltd.
-                tempa1 = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
-                tempa2 = n.getElementsByTagName("vendor")[0].childNodes[0].nodeValue
-                temp_final2 = self.shortenmoboid(tempa2)
-                if temp_final2 != "To Be Filled By O.E.M." and temp_final2 != "System manufacturer":
-                    found_motherboard = True
+
+                product = n.getElementsByTagName("product")[0]
+                # double check if we're in the same node as before
+                if product.parentNode.getAttribute("handle") == "DMI:0001":
+                    tempa1 = product.childNodes[0].nodeValue
                 else:
-                    # Clear default motherboard values
-                    temp_final2 = ""
                     tempa1 = ""
-                if not temp_final2:
+
+                vendor = n.getElementsByTagName("vendor")[0]
+                # double check if we're in the same node as before
+                if vendor.parentNode.getAttribute("handle") == "DMI:0001":
+                    tempa2 = vendor.childNodes[0].nodeValue
+                else:
+                    tempa2 = ""
+
+                temp_final2 = self.shortenmoboid(tempa2)
+
+                # Clear/replace bad default motherboard values
+                badmoboids = (
+                    "to be filled by o.e.m.",
+                    "system manufacturer",
+                    "system product name"
+                )
+                try:
+                    badmoboids.index(temp_final2.lower())
+                    temp_final2 = ""
+                except ValueError:
+                    pass
+                try:
+                    badmoboids.index(tempa1.lower())
+                    tempa1 = ""
+                except ValueError:
+                    pass
+
+                if not temp_final2 and not tempa1:
                     self.lshwinfo["system"] = self.unknown
+                elif not temp_final2 and tempa1:
+                    self.lshwinfo["system"] = tempa1
+                elif temp_final2 and not tempa1:
+                    self.lshwinfo["system"] = temp_final2
                 else:
                     self.lshwinfo["system"] = "%s %s" % (temp_final2, tempa1)
                 #print("MOO: %s %s" % (tempa1, tempa2))
             
             if n.hasAttribute("id"):
-
                 if n.getAttribute("id") == "core":
                     #<product>MS-7235</product><vendor>MICRO-STAR INTERNATIONAL CO.,LTD</vendor>
                     #product: G31M-S2L - vendor: Gigabyte Technology Co., Ltd.
-                    tempa1 = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
-                    tempa2 = n.getElementsByTagName("vendor")[0].childNodes[0].nodeValue
-                    temp_final2 = self.shortenmoboid(tempa2)
-                    if temp_final2 != "To Be Filled By O.E.M." and temp_final2 != "System manufacturer":
-                        found_motherboard = True
+
+                    product = n.getElementsByTagName("product")[0]
+                    # double check if we're in the same node as before
+                    if product.parentNode.getAttribute("id") == "core":
+                        tempa1 = product.childNodes[0].nodeValue
                     else:
-                        # Clear default motherboard values
-                        temp_final2 = ""
                         tempa1 = ""
-                    if not temp_final2:
+
+                    vendor = n.getElementsByTagName("vendor")[0]
+                    # double check if we're in the same node as before
+                    if vendor.parentNode.getAttribute("id") == "core":
+                        tempa2 = vendor.childNodes[0].nodeValue
+                    else:
+                        tempa2 = ""
+
+                    temp_final2 = self.shortenmoboid(tempa2)
+                    # Clear/replace bad default motherboard values
+                    badmoboids = (
+                        "to be filled by o.e.m.",
+                        "system manufacturer",
+                        "system product name"
+                    )
+                    try:
+                        badmoboids.index(temp_final2.lower())
+                        temp_final2 = ""
+                    except ValueError:
+                        pass
+                    try:
+                        badmoboids.index(tempa1.lower())
+                        tempa1 = ""
+                    except ValueError:
+                        pass
+
+                    if not temp_final2 and not tempa1:
                         self.lshwinfo["core"] = self.unknown
+                    elif not temp_final2 and tempa1:
+                        self.lshwinfo["core"] = tempa1
+                    elif temp_final2 and not tempa1:
+                        self.lshwinfo["core"] = temp_final2
                     else:
                         self.lshwinfo["core"] = "%s %s" % (temp_final2, tempa1)
-                    #print("MOO: %s %s" % (tempa1, tempa2))
+                    #print("MOO2: %s %s %s" % (temp_final2, tempa1, tempa2))
 
-                elif re.match(r'cpu(?::\n)?', n.getAttribute("id")):
+                elif re.match(r'cpu', n.getAttribute("id")):
                     try:
                         tempa = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
                         if tempa[0:5] == "Intel" or tempa[0:7] == "Pentium": # Intel(R) Core(TM)2 Duo CPU     E6550  @ 2.33GHz
@@ -238,10 +295,10 @@ class core:
                     except IndexError:
                         pass
 
-                elif re.match(r'display(?::\n)?', n.getAttribute("id")):
+                elif re.match(r'display', n.getAttribute("id")):
                     identified = False
                     try:
-                        tempa1 = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
+                        tempmodel = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
                         # G73 [GeForce 7300 GT], Radeon R350 [Radeon 9800 Pro]
                         tempa2 = n.getElementsByTagName("vendor")[0].childNodes[0].nodeValue
                         # nVidia Corporation, ATI Technologies Inc
@@ -250,18 +307,20 @@ class core:
                         pass
 
                     if identified:
-                        temp_final2 = tempa2
+                        tempvendor = tempa2
                         try:
-                            if tempa2[0:6] == "nVidia":
-                                temp_final2 = "nVidia"
-                            elif tempa2[0:3] == "ATI":
-                                temp_final2 = "ATI"
-                            elif tempa2[0:5] == "Intel":
-                                temp_final2 = "Intel"
+                            if tempa2[0:6].lower() == "nvidia":
+                                tempvendor = "nVidia"
+                            elif tempa2[0:3].lower() == "ati":
+                                tempvendor = "ATI"
+                            elif tempa2[0:5].lower() == "intel":
+                                tempvendor = "Intel"
+                            elif tempa2[0:7].lower() == "innotek":
+                                tempvendor = "Innotek"
                         except IndexError:
                             pass
 
-                        displaystr = "%s %s" % (temp_final2, tempa1)
+                        displaystr = "%s %s" % (tempvendor, tempmodel)
                         # Remove default data
                         try:
                             self.lshwinfo["display"].remove(self.unknown)
@@ -273,12 +332,12 @@ class core:
                         except ValueError:
                             self.lshwinfo["display"].append(displaystr)
 
-                elif re.match(r'network(?::\n)?', n.getAttribute("id")):
+                elif re.match(r'network', n.getAttribute("id")):
                     identified = False
                     try:
                         tempdesc = n.getElementsByTagName("description")[0].childNodes[0].nodeValue
                         # Wireless interface, Ethernet interface
-                        tempa1 = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
+                        tempmodel = n.getElementsByTagName("product")[0].childNodes[0].nodeValue
                         # PRO/Wireless 2200BG [Calexico2] Network Connection, L1 Gigabit Ethernet Adapter
                         tempa2 = n.getElementsByTagName("vendor")[0].childNodes[0].nodeValue
                         # Realtek Semiconductor Co., Ltd., Intel Corporation, Atheros Communications
@@ -287,26 +346,29 @@ class core:
                         pass
 
                     if identified:
-                        temptype = re.sub(r' interface', '', tempdesc)
+                        cre = re.compile(r' interface', re.IGNORECASE)
+                        temptype = cre.sub('', tempdesc)
 
-                        temp_final2 = tempa2
+                        tempvendor = tempa2
                         try:
-                            if tempa2[0:6] == "nVidia":
-                                temp_final2 = "nVidia"
-                            elif tempa2[0:3] == "VIA":
-                                temp_final2 = "VIA"
-                            elif tempa2[0:7] == "Atheros":
-                                temp_final2 = "Atheros"
-                            elif tempa2[0:5] == "Intel":
-                                temp_final2 = "Intel"
-                            elif tempa2[0:7] == "Realtek":
-                                temp_final2 = "Realtek"
-                            elif tempa2[0:8] == "Broadcom":
-                                temp_final2 = "Broadcom"
+                            if tempa2[0:6].lower() == "nvidia":
+                                tempvendor = "nVidia"
+                            elif tempa2[0:3].lower() == "via":
+                                tempvendor = "VIA"
+                            elif tempa2[0:7].lower() == "atheros":
+                                tempvendor = "Atheros"
+                            elif tempa2[0:5].lower() == "intel":
+                                tempvendor = "Intel"
+                            elif tempa2[0:7].lower() == "realtek":
+                                tempvendor = "Realtek"
+                            elif tempa2[0:8].lower() == "broadcom":
+                                tempvendor = "Broadcom"
                         except IndexError:
                             pass
 
-                        networkstr = "%s: %s %s" % (temptype, temp_final2, tempa1)
+                        #tempmodel = cre.sub('', tempa1)
+
+                        networkstr = "%s: %s %s" % (temptype, tempvendor, tempmodel)
                         # Remove default data
                         try:
                             self.lshwinfo["network"].remove(self.unknown)
@@ -318,13 +380,15 @@ class core:
                         except ValueError:
                             self.lshwinfo["network"].append(networkstr)
 
-                elif re.match(r'memory(?::\n)?', n.getAttribute("id")):
+                elif re.match(r'memory', n.getAttribute("id")):
                     try:
                         x = n.getElementsByTagName("description")[0].childNodes[0].nodeValue
-                        if x == "System Memory":
+                        #print("MOO1: %s" % x)
+                        if x.lower() == "system memory":
                             tempa = n.getElementsByTagName("size")[0].childNodes[0].nodeValue
-                            temp_final = int(tempa) / 1024**2 # Size in bytes, divide by 1024**2, result in MiB
-                            self.lshwinfo["memory"] = temp_final
+                            #print("MOO2: %s" % tempa)
+                            tempmemory = int(tempa) / 1024**2 # Size in bytes, divide by 1024**2, result in MiB
+                            self.lshwinfo["memory"] = tempmemory
                     except IndexError:
                         pass
 
@@ -395,8 +459,9 @@ def main():
     except IndexError:
         arg = ""
     text = core(fxml=arg).returnall()
-    siggui(text)
-    gtk.main()
+    print(text)
+    #siggui(text)
+    #gtk.main()
 
 if __name__ == "__main__":
     main()
