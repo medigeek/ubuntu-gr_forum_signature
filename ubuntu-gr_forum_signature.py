@@ -3,6 +3,7 @@
 # File: ubuntu-gr_signature.py
 # Purpose: Proposes a signature with useful hardware/software information to forum newcomers/newbies
 # Requires: python 2.5, lshw, lsb-release, sudo (for motherboard chip recognition)
+#           python-gtk2, python-mechanize
 
 # DEBUG: sudo lshw -xml -sanitize | pastebinit -b "http://pastebin.com"
 
@@ -40,11 +41,12 @@ import os
 import re
 import subprocess
 import xml.dom.minidom
+import time
 
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gobject
+import glib
 
 class core:
     def __init__(self, fxml=""):
@@ -407,50 +409,170 @@ class siggui:
     """ The graphical user interface for timekpr configuration. """
     def __init__(self, text):
         self.unknown = u"�"
+        self.username = ""
+        self.password = ""
+        # UI FILE
         self.uifile = "ubuntu-gr_forum_signature.glade"
         self.builder = gtk.Builder()
         self.builder.add_from_file(self.uifile)
-        dic = {
-            "on_button1_clicked" : self.button1_clicked,
-            "on_button2_clicked" : gtk.main_quit,
-            "on_window1_destroy" : gtk.main_quit,
-            "on_comboboxentry1_changed": self.knowledgeline,
-            "on_comboboxentry2_changed": self.knowledgeline,
-            "on_comboboxentry3_changed": self.knowledgeline,
-        }
-        self.builder.connect_signals(dic)
+        #SIGNALS
+        self.builder.connect_signals(self)
+        # WINDOW
         self.window = self.builder.get_object("window1")
-        self.textbox = self.builder.get_object("textview1")
+        self.textbox = self.builder.get_object("textview1") # new/pending sig
         self.textboxbuf = self.textbox.get_buffer()
         self.textboxbuf.set_text(text)
+        self.textbox2 = self.builder.get_object("textview2") # old sig
+        self.textboxbuf2 = self.textbox2.get_buffer()
         self.comboboxlinux = self.builder.get_object("comboboxentry1")
         self.comboboxprogramming = self.builder.get_object("comboboxentry2")
         self.comboboxenglish = self.builder.get_object("comboboxentry3")
-        #self.window.show()
+        self.statusbar = self.builder.get_object("statusbar1")
+        self.statusbarcid = self.statusbar.get_context_id("status")
+        self.oldsigpack = self.builder.get_object("expander1")
+        # DIALOG
+        self.dialog = self.builder.get_object("dialog1")
+        self.dialog.set_default_response(gtk.RESPONSE_CANCEL)
+        self.entry1 = self.builder.get_object("entry1")
+        self.entry2 = self.builder.get_object("entry2")
+        # ERROR MESSAGE DIALOG
+        self.errormsg = self.builder.get_object("messagedialog1")
 
-    def button1_clicked(self, widget):
-        print("WOOO!")
+    def statusmsg(self, message):
+        msg = "%s %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), message)
+        msgid = self.statusbar.push(self.statusbarcid, msg)
+        #self.statusrefresh()
+        timeoutid2 = glib.timeout_add_seconds(4, self.statusrefresh, msgid)
 
-    def knowledgeline(self, widget):
+    def statusrefresh(self, msgid):
+        self.statusbar.remove_message(self.statusbarcid, msgid)
+    
+    def gtk_main_quit(self, widget):
+        gtk.main_quit()
+
+    def on_comboboxentry_changed(self, widget):
         linux = self.comboboxlinux.get_active_text()
         programming = self.comboboxprogramming.get_active_text()
         english = self.comboboxenglish.get_active_text()
-        line = u"Γνώσεις ⇛ Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+        self.line = u"Γνώσεις ⇛ Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
             (linux, programming, english)
-        start, end = self.textboxbuf.get_bounds()
+        (start, end) = self.textboxbuf.get_bounds()
         oldtext = self.textboxbuf.get_text(start, end) # get all text
         newtext = re.subn(
             r'Γνώσεις ⇛ Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
-            line,
+            self.line,
             oldtext
         ) # newtext is a touple ("newstring", times_of_substitution)
         if newtext[1] > 0: # If substitutions took place
             self.textboxbuf.set_text(newtext[0])
         else: # If no substitutions took place
             if oldtext == "":
-                self.textboxbuf.set_text(line)
+                self.textboxbuf.set_text(self.line)
             else:
-                self.textboxbuf.set_text("%s\n%s" % (oldtext, line))
+                self.textboxbuf.set_text("%s\n%s" % (oldtext, self.line))
+
+    def on_button3_clicked(self, widget):
+        # Refresh
+        pass
+
+    def on_button1_clicked(self, widget):
+        # Submit to forum
+        dialogreply = self.dialog.run()
+        if dialogreply == gtk.RESPONSE_APPLY:
+            #print("REPLY: %s (continue)" % dialogreply)
+            #print("User: %s Pass: %s" % (self.username, self.password))
+            self.statusmsg("Contacting forum...")
+            timeid = glib.timeout_add_seconds(1, self.webwrapper)
+        #elif dialogreply == gtk.RESPONSE_CANCEL or dialogreply == gtk.RESPONSE_DELETE_EVENT:
+            #print("REPLY: %s (cancel)" % dialogreply)
+        self.dialog.hide()
+
+    def webwrapper(self):
+        webreply = self.sendtoweb()
+        #oldsig = "oldsig test"
+        if webreply[0] == 0:
+            self.textboxbuf2.set_text(webreply[1])
+            self.oldsigpack.set_expanded(True)
+        else:
+            pass
+
+    def gtk_false(self, *widget):
+        # DIALOG - Cancel
+        self.dialog.response(gtk.RESPONSE_CANCEL)
+
+    def gtk_true(self, *widget):
+        # DIALOG - Continue
+        self.dialog.response(gtk.RESPONSE_APPLY)
+
+    def on_entry1_changed(self, widget):
+        # DIALOG - Username
+        self.username = self.entry1.get_text()
+
+    def on_entry2_changed(self, widget):
+        # DIALOG - Password
+        self.password = self.entry2.get_text()
+
+    def messagedialog(self, msg):
+        self.errormsg.set_markup(msg)
+        dialogreply = self.errormsg.run()
+        self.errormsg.hide()
+
+    def sendtoweb(self):
+        (start, end) = self.textboxbuf.get_bounds()
+        text = self.textboxbuf.get_text(start, end)
+
+        m = __import__("mechanize")
+        br = m.Browser()
+        br.set_handle_referer(True)
+        br.set_handle_redirect(True)
+        br.set_handle_equiv(True)
+        #br.set_handle_gzip(True)
+        br.set_handle_refresh(m._http.HTTPRefreshProcessor(), max_time=1)
+
+        br.open("http://forum.ubuntu-gr.org/ucp.php?i=profile&mode=signature")
+        #self.statusmsg("Logging in...")
+        br.select_form(nr=1) # Select login form (no name for the form)
+        br["username"] = self.username
+        br["password"] = self.password
+        response1 = br.submit()
+        h1 = response1.read()
+
+        m = re.search(r'<div class="error">(.*)</div>', h1)
+        if m:
+            errormsg = m.group(1)
+            if re.search(r"Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης", errormsg):
+                errormsg = u'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης. Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης.\nΓια να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
+            self.statusmsg(u"Σφάλμα: %s" % errormsg)
+            self.messagedialog(u"Σφάλμα: %s" % errormsg)
+            return (1,u"Σφάλμα: %s" % errormsg)
+            #print("Error: %s" % errormsg)
+        #print(h1)
+
+        r2 = br.follow_link(url_regex=r'.*profile.*mode=signature.*sid')
+        #h2 = r2.read()
+        #print(h2)
+
+        br.select_form(nr=1)
+        oldsigtmp = br["signature"]
+        oldsig = unicode(oldsigtmp, "utf-8")
+        br["signature"] = text
+        r3 = br.submit(name='submit')
+        h3 = r3.read()
+        #print(h3)
+
+        m = re.search(r'<p class="error">(.*)</p>', h3)
+        if m:
+            errormsg = m.group(1)
+            self.statusmsg(u"Σφάλμα: %s" % errormsg)
+            self.messagedialog(u"Σφάλμα: %s" % errormsg)
+            return (1,u"Σφάλμα: %s" % errormsg)
+
+        r4 = br.follow_link(url_regex=r'ucp\.php.*mode=logout')
+        #h4 = r4.read()
+        #print(h4)
+
+        self.statusmsg("Submitted to forum!")
+        return (0,oldsig)
 
 def main():
     #Argument: lshw xml filename (for testing)
@@ -459,9 +581,11 @@ def main():
     except IndexError:
         arg = ""
     text = core(fxml=arg).returnall()
-    #print(text)
+    print(text)
+    #sendtoweb(signature=text)
     siggui(text)
     gtk.main()
 
 if __name__ == "__main__":
     main()
+
