@@ -468,17 +468,11 @@ class siggui:
         return (0,oldsig)
 
 def main():
-    #Argument: lshw xml filename (for testing)
-    try:
-        arg = sys.argv[1]
-    except IndexError:
-        arg = ""
-    #text = core(fxml=arg).returnall()
     text = core().returnall()
     print(text)
     #sendtoweb(signature=text)
-    #siggui(text)
-    #gtk.main()
+    siggui(text)
+    gtk.main()
 
 def timeit():
     #import cProfile
@@ -490,4 +484,3 @@ def timeit():
 if __name__ == "__main__":
     main()
     #timeit()
-
