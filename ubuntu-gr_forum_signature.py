@@ -521,7 +521,10 @@ class siggui:
         (start, end) = self.textboxbuf.get_bounds()
         text = self.textboxbuf.get_text(start, end)
 
-        m = __import__("mechanize")
+        try:
+            m = __import__("mechanize")
+        except ImportError:
+            return (1,u"Σφάλμα: Δεν έχετε εγκατεστημένο το python-mechanize.\nΓια να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize")
         br = m.Browser()
         br.set_handle_referer(True)
         br.set_handle_redirect(True)
