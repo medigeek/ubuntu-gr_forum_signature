@@ -164,31 +164,6 @@ class core:
         return s
 
     def getinfo(self):
-        """ Use runcommand()
-            MEMORY: cat /proc/meminfo | grep MemTotal
-            PROCESSOR: cat /proc/cpuinfo | grep "model name\|processor"
-            GRAPHICS CARDS: lspci -nn | grep VGA
-            NETWORK CARDS: lspci -nn | grep ethernet (wireless lsusb??)
-            
-            lspci -v -s `lspci | awk '/VGA/{print $1}'`
-            01:00.0 VGA compatible controller: nVidia Corporation G73 [GeForce 7300 GT] (rev a1) (prog-if 00 [VGA controller])
-            	Subsystem: Micro-Star International Co., Ltd. NX7300GT-TD256EH
-
-            for i in `lspci | awk '/VGA/{print $1}'`; do lspci -v -s $i; done
-
-            lspci -v -s `lspci | awk '/VGA/{print $1}'` | sed -n '/Memory.*, prefetchable/s/.*\[size=\([^]]\+\)\]/\1/p'
-            256M
-
-            lspci | grep Ether | awk '{ VAR=$1; split(VAR,ARR,"."); count[ARR[1]]++; LINE=$0; split(LINE,LINEARR,":"); LINECOUNT[ARR[1]]=LINEARR[3]; } END { for(i in count) { printf("PCI address: %s\nPorts: %d\nCard Type: %s\n", i, count[i], LINECOUNT[i]) } }'
-            PCI address: 04:01
-            Ports: 1
-            Card Type:  Realtek Semiconductor Co., Ltd. RTL-8139/8139C/8139C+ (rev 10)
-            PCI address: 04:02
-            Ports: 1
-            Card Type:  Realtek Semiconductor Co., Ltd. RTL-8110SC/8169SC Gigabit Ethernet (rev 10)
-
-            motherboard chip id: /sys/devices/virtual/dmi/id/
-        """
         self.info["memory"] = self.getmeminfo()
         self.info["cpu"] = self.getcpuinfo()
         self.info["display"] = self.getdisplayinfo()
@@ -251,8 +226,8 @@ class core:
             self.lsusb = self.runcommand(u)
 
     def getnetworkinfo(self):
-        #TODO: USB
-        match = re.findall(r"Ethernet[^:]+:\s+(.+)", self.lspci, re.M)
+        #TODO: USB? cat /sys/class/net/*/device/uevent
+        match = re.findall(r"(?:Network|Ethernet)[^:]+:\s+(.+)", self.lspci, re.M)
         network = ', '.join(match)
         return network
 
