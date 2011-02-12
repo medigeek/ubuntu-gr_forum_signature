@@ -54,6 +54,7 @@ class core:
         # Dictionary for dicreplace()
         self.dic = {
             "MICRO-STAR INTERNATIONAL CO.,LTD": "MSI",
+            "Atheros Communications, Inc.": "Atheros",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
             "ASUSTeK Computer": "ASUS",
             "Intel Corporation": "Intel",
