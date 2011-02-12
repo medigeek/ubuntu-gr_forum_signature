@@ -39,9 +39,9 @@ import os
 
 import re
 import subprocess
-import xml.dom.minidom
 import time
 import string
+import glob
 
 import pygtk
 pygtk.require('2.0')
@@ -80,7 +80,7 @@ class core:
         self.lspci = ""
         self.lsusb = ""
         self.getlspci()
-        #self.getlsusb()
+        self.getlsusb()
         self.getinfo()
 
     def printall(self):
@@ -199,14 +199,12 @@ class core:
 
     def dicreplace(self, text):
         # self.dic is already prepared
-        
         # METHOD 1
         #rx = re.compile('|'.join(map(re.escape, dic)))
         #def repl(m):
             #return dic[m.group(0)]
         #nt = rx.sub(repl, text)
         #return nt
-
         # METHOD 2
         # string.replace will get worse times as dictionary gets bigger
         s = text
@@ -226,9 +224,27 @@ class core:
             self.lsusb = self.runcommand(u)
 
     def getnetworkinfo(self):
-        #TODO: USB? cat /sys/class/net/*/device/uevent
-        match = re.findall(r"(?:Network|Ethernet)[^:]+:\s+(.+)", self.lspci, re.M)
-        network = ', '.join(match)
+        files = glob.glob("/sys/class/net/*/device/modalias")
+        #netcards = dict()
+        netcards = list()
+        for f in files:
+            name = f.split("/")[4] # ['', 'sys', 'class', 'net', 'eth1', 'device', 'modalias'
+            s = self.getfile(f).strip()
+            # PCI: v*d*s => [('10EC', '8139')]
+            pciids = re.findall(r"v0000([0-9A-Z]+)d0000([0-9A-Z]+)s", s)
+            #USB: v*p*d => [('0CF3', '1002')]
+            usbids = re.findall(r"v([0-9A-Z]+)p([0-9A-Z]+)d", s)
+            if pciids:
+                #04:01.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
+                mp = ":\s(.*%s:%s.*)" % (pciids[0][0], pciids[0][1])
+                pcidesc = re.findall(mp, self.lspci, re.M + re.I)
+                netcards.append("%s: %s" % (name, pcidesc[0]))
+            if usbids:
+                #Bus 002 Device 004: ID 0cf3:1002 Atheros Communications, Inc. TP-Link TL-WN821N v2 [Atheros AR9001U-(2)NG]
+                mu = ":\sID\s(%s:%s.*)" % (usbids[0][0], usbids[0][1])
+                usbdesc = re.findall(mu, self.lsusb, re.M + re.I)
+                netcards.append("%s: %s" % (name, usbdesc[0]))
+        network = ', '.join(netcards)
         return network
 
     def getdisplayinfo(self):
