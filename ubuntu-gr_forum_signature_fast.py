@@ -93,14 +93,15 @@ class core:
         z = self.specs()
         text = u"%s\n%s\n%s" % (x, y, z)
         t = self.dicreplace(text)
-        return t
+        t2 = re.sub(r"\[?(\w{4}:\w{4})\]?", r"⎨\1⎬", t)
+        return t2
 
     def knowledge(self):
         s = {   "linux": self.unknown,
                 "programming": self.unknown,
                 "english": self.unknown
             }
-        return u"Γνώσεις ⇛ Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+        return u"1 Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
                 (s["linux"], s["programming"], s["english"])
 
     def osinfo(self):
@@ -112,12 +113,12 @@ class core:
         distrib = ' '.join(d)
         lang = self.oslang()
         arch_type = self.machinearch()
-        s = u"Λειτουργικό: %s %s (%s)" % (distrib, arch_type, lang)
+        s = u"2 Λειτουργικό → %s %s (%s)" % (distrib, arch_type, lang)
         return s
 
     def specs(self):
         core = self.shortencoreid()
-        text = u'Προδιαγραφές ⇛ %s │ RAM %s MiB │ %s\nΚάρτες γραφικών: %s\nΔίκτυα: %s' % \
+        text = u'3 Προδιαγραφές → %s ‖ RAM %s MiB ‖ %s\n4 Κάρτες γραφικών: %s\n5 Δίκτυα: %s' % \
             (self.info["cpu"],
             self.info["memory"],
             core,
@@ -245,12 +246,12 @@ class core:
                 mu = ":\sID\s(%s:%s.*)" % (usbids[0][0], usbids[0][1])
                 usbdesc = re.findall(mu, self.lsusb, re.M + re.I)
                 netcards.append("%s: %s" % (name, usbdesc[0]))
-        network = ', '.join(netcards)
+        network = ' ⋮ '.join(netcards)
         return network
 
     def getdisplayinfo(self):
         match = re.findall(r"VGA[^:]+:\s+(.+)", self.lspci, re.M)
-        graphics = ', '.join(match)
+        graphics = ' ⋮ '.join(match)
         return graphics
 
     def getcpuinfo(self):
@@ -336,12 +337,12 @@ class siggui:
         linux = self.comboboxlinux.get_active_text()
         programming = self.comboboxprogramming.get_active_text()
         english = self.comboboxenglish.get_active_text()
-        self.line = u"Γνώσεις ⇛ Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+        self.line = u"Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
             (linux, programming, english)
         (start, end) = self.textboxbuf.get_bounds()
         oldtext = self.textboxbuf.get_text(start, end) # get all text
         newtext = re.subn(
-            r'Γνώσεις ⇛ Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
+            r'Γνώσεις → Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
             self.line,
             oldtext
         ) # newtext is a touple ("newstring", times_of_substitution)
