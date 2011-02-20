@@ -4,7 +4,7 @@
 # Purpose: Proposes a signature with useful hardware/software information to forum newcomers/newbies
 # Requires: python 2.5, python-gtk2, python-mechanize
 
-# Copyright (c) 2010 Savvas Radevic <vicedar@gmail.com>
+# Copyright (c) 2010-2011 Savvas Radevic <vicedar@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,20 +20,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """ Example of signature:
-Γνώσεις ⇛ Linux: � ┃ Προγραμματισμός: � ┃ Αγγλικά: �
-Λειτουργικό: Ubuntu 10.10 64-bit (en_GB.utf8)
-Προδιαγραφές ⇛ Intel Core 2 Duo E6550 2.33GHz │ RAM 2008 MiB │ MSI MS-7235
-Κάρτες γραφικών: nVidia G73 [GeForce 7300 GT] [10DE:393]
-Δίκτυα: Ethernet: Realtek RTL-8139/8139C/8139C+ [10EC:8139], Ethernet: Realtek RTL-8110SC/8169SC Gigabit Ethernet [10EC:8167]
+1 Γνώσεις → Linux: � ┃ Προγραμματισμός: � ┃ Αγγλικά: �
+2 Λειτουργικό → Ubuntu 10.10 maverick 64-bit (en_GB.utf8)
+3 Προδιαγραφές → CPU: 2x Intel Core2 Duo CPU E6550 2.33GHz ‖ RAM 3961 MiB ‖ MSI MS-7235
+4 Κάρτες γραφικών: nVidia G73 [GeForce 7300 GT] ⎨10de:0393⎬ (rev a1)
+5 Δίκτυα: eth0: Realtek RTL-8110SC/8169SC Gigabit Ethernet ⎨10ec:8167⎬ (rev 10) ⋮ eth1: Realtek RTL-8139/8139C/8139C+ ⎨10ec:8139⎬ (rev 10)
 """
 
-import sys
 import platform
-
-if sys.version < '2.5':
-    sys.exit('ERROR: You need python 2.5 or higher to use this program.')
+pyversion = platform.python_version()
+if pyversion < '2.5':
+    exit('ERROR: You need python 2.5 or higher to use this program.')
 if platform.system() != "Linux":
-    sys.exit('ERROR: This script is built for GNU/Linux platforms (for now)')
+    exit('ERROR: This script is built for GNU/Linux platforms (for now)')
 
 import os
 
@@ -43,14 +42,17 @@ import time
 import string
 import glob
 
-import pygtk
-pygtk.require('2.0')
-import gtk
-import glib
+textonly = False
+try:
+    import gtk
+    import glib
+except ImportError:
+    print("ERROR: Could not load gtk/glib GUI modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
+    textonly = True
 
 class core:
     def __init__(self):
-        self.unknown = u"�" # Character/string for unknown data
+        self.unknown = "�" # Character/string for unknown data
         # Dictionary for dicreplace()
         self.dic = {
             "MICRO-STAR INTERNATIONAL CO.,LTD": "MSI",
@@ -63,6 +65,7 @@ class core:
             "InnoTek": "Innotek",
             "Realtek Semiconductor Co., Ltd.": "Realtek",
             "nVidia Corporation": "nVidia",
+            "ASUS INC.": "ASUS",
             "(R)": "",
             "(TM)": "",
             "(r)": "",
@@ -85,13 +88,13 @@ class core:
         self.getinfo()
 
     def printall(self):
-        print(self.returnall())
+        print((self.returnall()))
 
     def returnall(self):
         x = self.knowledge()
         y = self.osinfo()
         z = self.specs()
-        text = u"%s\n%s\n%s" % (x, y, z)
+        text = "%s\n%s\n%s" % (x, y, z)
         t = self.dicreplace(text)
         t2 = re.sub(r"\[?(\w{4}:\w{4})\]?", r"⎨\1⎬", t)
         return t2
@@ -101,7 +104,7 @@ class core:
                 "programming": self.unknown,
                 "english": self.unknown
             }
-        return u"1 Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+        return "1 Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
                 (s["linux"], s["programming"], s["english"])
 
     def osinfo(self):
@@ -113,12 +116,12 @@ class core:
         distrib = ' '.join(d)
         lang = self.oslang()
         arch_type = self.machinearch()
-        s = u"2 Λειτουργικό → %s %s (%s)" % (distrib, arch_type, lang)
+        s = "2 Λειτουργικό → %s %s (%s)" % (distrib, arch_type, lang)
         return s
 
     def specs(self):
         core = self.shortencoreid()
-        text = u'3 Προδιαγραφές → %s ‖ RAM %s MiB ‖ %s\n4 Κάρτες γραφικών: %s\n5 Δίκτυα: %s' % \
+        text = '3 Προδιαγραφές → %s ‖ RAM %s MiB ‖ %s\n4 Κάρτες γραφικών: %s\n5 Δίκτυα: %s' % \
             (self.info["cpu"],
             self.info["memory"],
             core,
@@ -210,7 +213,7 @@ class core:
         # METHOD 2
         # string.replace will get worse times as dictionary gets bigger
         s = text
-        for key,val in self.dic.items():
+        for key,val in list(self.dic.items()):
             ns = string.replace(s, key, val)
             s = ns
         return s
@@ -291,11 +294,11 @@ class core:
 class siggui:
     """ The graphical user interface for timekpr configuration. """
     def __init__(self, text):
-        self.unknown = u"�"
+        self.unknown = "�"
         self.username = ""
         self.password = ""
         # UI FILE
-        self.uifile = "ubuntu-gr_forum_signature.glade"
+        self.uifile = "forum_signature.glade"
         self.builder = gtk.Builder()
         self.builder.add_from_file(self.uifile)
         #SIGNALS
@@ -337,7 +340,7 @@ class siggui:
         linux = self.comboboxlinux.get_active_text()
         programming = self.comboboxprogramming.get_active_text()
         english = self.comboboxenglish.get_active_text()
-        self.line = u"Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+        self.line = "Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
             (linux, programming, english)
         (start, end) = self.textboxbuf.get_bounds()
         oldtext = self.textboxbuf.get_text(start, end) # get all text
@@ -407,7 +410,7 @@ class siggui:
         try:
             m = __import__("mechanize")
         except ImportError:
-            return (1,u"Σφάλμα: Δεν έχετε εγκατεστημένο το python-mechanize.\nΓια να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize")
+            return (1,"Σφάλμα: Δεν έχετε εγκατεστημένο το python-mechanize.\nΓια να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize")
         br = m.Browser()
         br.set_handle_referer(True)
         br.set_handle_redirect(True)
@@ -427,10 +430,10 @@ class siggui:
         if m:
             errormsg = m.group(1)
             if re.search(r"Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης", errormsg):
-                errormsg = u'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης. Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης.\nΓια να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
-            self.statusmsg(u"Σφάλμα: %s" % errormsg)
-            self.messagedialog(u"Σφάλμα: %s" % errormsg)
-            return (1,u"Σφάλμα: %s" % errormsg)
+                errormsg = 'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης. Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης.\nΓια να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
+            self.statusmsg("Σφάλμα: %s" % errormsg)
+            self.messagedialog("Σφάλμα: %s" % errormsg)
+            return (1,"Σφάλμα: %s" % errormsg)
             #print("Error: %s" % errormsg)
         #print(h1)
 
@@ -440,7 +443,7 @@ class siggui:
 
         br.select_form(nr=1)
         oldsigtmp = br["signature"]
-        oldsig = unicode(oldsigtmp, "utf-8")
+        oldsig = str(oldsigtmp, "utf-8")
         br["signature"] = text
         r3 = br.submit(name='submit')
         h3 = r3.read()
@@ -449,9 +452,9 @@ class siggui:
         m = re.search(r'<p class="error">(.*)</p>', h3)
         if m:
             errormsg = m.group(1)
-            self.statusmsg(u"Σφάλμα: %s" % errormsg)
-            self.messagedialog(u"Σφάλμα: %s" % errormsg)
-            return (1,u"Σφάλμα: %s" % errormsg)
+            self.statusmsg("Σφάλμα: %s" % errormsg)
+            self.messagedialog("Σφάλμα: %s" % errormsg)
+            return (1,"Σφάλμα: %s" % errormsg)
 
         r4 = br.follow_link(url_regex=r'ucp\.php.*mode=logout')
         #h4 = r4.read()
@@ -463,16 +466,16 @@ class siggui:
 def main():
     text = core().returnall()
     print(text)
-    #sendtoweb(signature=text)
-    siggui(text)
-    gtk.main()
+    if not textonly:
+        siggui(text)
+        gtk.main()
 
 def timeit():
     #import cProfile
     #cProfile.run('main()')
     import timeit
     t = timeit.Timer('main()', 'from __main__ import main')
-    print(t.timeit(number=1000))
+    print((t.timeit(number=1000)))
 
 if __name__ == "__main__":
     main()
