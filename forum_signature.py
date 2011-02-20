@@ -88,7 +88,7 @@ class core:
         self.getinfo()
 
     def printall(self):
-        print((self.returnall()))
+        print(self.returnall())
 
     def returnall(self):
         x = self.knowledge()
@@ -475,7 +475,7 @@ def timeit():
     #cProfile.run('main()')
     import timeit
     t = timeit.Timer('main()', 'from __main__ import main')
-    print((t.timeit(number=1000)))
+    print(t.timeit(number=1000))
 
 if __name__ == "__main__":
     main()
