@@ -273,7 +273,7 @@ class core:
         s = self.getfile(f)
         match = re.search("MemTotal:\s+(\d+)", s, re.M)
         x = int(match.group(1)) # kilobytes, convert string to int
-        memory = x / 1024 # megabytes
+        memory = int(x / 1024) # megabytes
         return memory
 
     def getfile(self, filename, mode="string"):
