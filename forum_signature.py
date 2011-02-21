@@ -43,10 +43,19 @@ import glob
 
 textonly = False
 try:
+    import pygtk
+    pygtk.require('2.0')
     import gtk
-    import glib
 except ImportError:
-    print("ERROR: Could not load gtk/glib GUI modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
+    print("ERROR: Could not load gtk module")
+    textonly = True
+try:
+    try:
+        import gobject as glib
+    except ImportError:
+        import glib
+except ImportError:
+    print("ERROR: Could not load glib/gobject module")
     textonly = True
 
 class core:
@@ -332,6 +341,10 @@ class siggui:
         self.entry2 = self.builder.get_object("entry2")
         # ERROR MESSAGE DIALOG
         self.errormsg = self.builder.get_object("messagedialog1")
+        # Ubuntu Hardy 8.04 compatibility
+        self.comboboxlinux.set_text_column(0)
+        self.comboboxprogramming.set_text_column(0)
+        self.comboboxenglish.set_text_column(0)
 
     def statusmsg(self, message):
         msg = "%s %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), message)
@@ -474,8 +487,11 @@ class siggui:
 
 def main():
     text = core().returnall()
-    print(text)
-    if not textonly:
+    if textonly:
+        print("Could not load gtk/glib/gobject modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
+        print(text)
+    else:
+        print(text)
         siggui(text)
         gtk.main()
 
