@@ -39,7 +39,6 @@ import os
 import re
 import subprocess
 import time
-import string
 import glob
 
 textonly = False
@@ -52,6 +51,7 @@ except ImportError:
 
 class core:
     def __init__(self):
+        self.pyversion = platform.python_version()
         self.unknown = "�" # Character/string for unknown data
         # Dictionary for dicreplace()
         self.dic = {
@@ -97,6 +97,7 @@ class core:
         text = "%s\n%s\n%s" % (x, y, z)
         t = self.dicreplace(text)
         t2 = re.sub(r"\[?(\w{4}:\w{4})\]?", r"⎨\1⎬", t)
+        #t2 = t
         return t2
 
     def knowledge(self):
@@ -214,7 +215,7 @@ class core:
         # string.replace will get worse times as dictionary gets bigger
         s = text
         for key,val in list(self.dic.items()):
-            ns = string.replace(s, key, val)
+            ns = s.replace(key, val)
             s = ns
         return s
 
@@ -236,31 +237,32 @@ class core:
             name = f.split("/")[4] # ['', 'sys', 'class', 'net', 'eth1', 'device', 'modalias'
             s = self.getfile(f).strip()
             # PCI: v*d*s => [('10EC', '8139')]
-            pciids = re.findall(r"v0000([0-9A-Z]+)d0000([0-9A-Z]+)s", s)
+            pciids = re.findall("v0000([0-9A-Z]+)d0000([0-9A-Z]+)s", s)
             #USB: v*p*d => [('0CF3', '1002')]
-            usbids = re.findall(r"v([0-9A-Z]+)p([0-9A-Z]+)d", s)
+            usbids = re.findall("v([0-9A-Z]+)p([0-9A-Z]+)d", s)
             if pciids:
                 #04:01.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
                 mp = ":\s(.*%s:%s.*)" % (pciids[0][0], pciids[0][1])
-                pcidesc = re.findall(mp, self.lspci, re.M + re.I)
+                pcidesc = re.findall(mp, self.lspci, re.M+re.I)
                 netcards.append("%s: %s" % (name, pcidesc[0]))
             if usbids:
                 #Bus 002 Device 004: ID 0cf3:1002 Atheros Communications, Inc. TP-Link TL-WN821N v2 [Atheros AR9001U-(2)NG]
                 mu = ":\sID\s(%s:%s.*)" % (usbids[0][0], usbids[0][1])
-                usbdesc = re.findall(mu, self.lsusb, re.M + re.I)
+                usbdesc = re.findall(mu, self.lsusb, re.M+re.I)
                 netcards.append("%s: %s" % (name, usbdesc[0]))
         network = ' ⋮ '.join(netcards)
         return network
 
     def getdisplayinfo(self):
-        match = re.findall(r"VGA[^:]+:\s+(.+)", self.lspci, re.M)
+        m = re.compile("VGA[^:]+:\s+(.+)", re.M)
+        match = m.findall(self.lspci)
         graphics = ' ⋮ '.join(match)
         return graphics
 
     def getcpuinfo(self):
         f = "/proc/cpuinfo"
         s = self.getfile(f)
-        match = re.findall(r"model name\s+:\s+(.+)", s, re.M)
+        match = re.findall("model name\s+:\s+(.+)", s)
         x = match[0]
         num = len(match) # Number of the cpu cores
         cpu = "CPU: %sx %s" % (num, x)
@@ -269,7 +271,7 @@ class core:
     def getmeminfo(self):
         f = "/proc/meminfo"
         s = self.getfile(f)
-        match = re.search(r"MemTotal:\s+(\d+)", s, re.M)
+        match = re.search("MemTotal:\s+(\d+)", s, re.M)
         x = int(match.group(1)) # kilobytes, convert string to int
         memory = x / 1024 # megabytes
         return memory
@@ -287,8 +289,15 @@ class core:
         return lines
 
     def runcommand(self, command):
-        p = subprocess.Popen(command, stdout=subprocess.PIPE)
-        output = p.communicate()[0]
+        # python3 compatibility issue
+        if self.pyversion >= '3.0.0':
+            c = command
+            if type(command) == type(list()):
+                c = ' '.join(command)
+            output = subprocess.getoutput(c)
+        else:
+            p = subprocess.Popen(command, stdout=subprocess.PIPE)
+            output = p.communicate()[0]
         return output
 
 class siggui:
@@ -345,7 +354,7 @@ class siggui:
         (start, end) = self.textboxbuf.get_bounds()
         oldtext = self.textboxbuf.get_text(start, end) # get all text
         newtext = re.subn(
-            r'Γνώσεις → Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
+            'Γνώσεις → Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
             self.line,
             oldtext
         ) # newtext is a touple ("newstring", times_of_substitution)
@@ -426,10 +435,10 @@ class siggui:
         response1 = br.submit()
         h1 = response1.read()
 
-        m = re.search(r'<div class="error">(.*)</div>', h1)
+        m = re.search('<div class="error">(.*)</div>', h1)
         if m:
             errormsg = m.group(1)
-            if re.search(r"Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης", errormsg):
+            if re.search("Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης", errormsg):
                 errormsg = 'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης. Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης.\nΓια να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
             self.statusmsg("Σφάλμα: %s" % errormsg)
             self.messagedialog("Σφάλμα: %s" % errormsg)
@@ -437,7 +446,7 @@ class siggui:
             #print("Error: %s" % errormsg)
         #print(h1)
 
-        r2 = br.follow_link(url_regex=r'.*profile.*mode=signature.*sid')
+        r2 = br.follow_link(url_regex='.*profile.*mode=signature.*sid')
         #h2 = r2.read()
         #print(h2)
 
@@ -449,14 +458,14 @@ class siggui:
         h3 = r3.read()
         #print(h3)
 
-        m = re.search(r'<p class="error">(.*)</p>', h3)
+        m = re.search('<p class="error">(.*)</p>', h3)
         if m:
             errormsg = m.group(1)
             self.statusmsg("Σφάλμα: %s" % errormsg)
             self.messagedialog("Σφάλμα: %s" % errormsg)
             return (1,"Σφάλμα: %s" % errormsg)
 
-        r4 = br.follow_link(url_regex=r'ucp\.php.*mode=logout')
+        r4 = br.follow_link(url_regex='ucp\.php.*mode=logout')
         #h4 = r4.read()
         #print(h4)
 
