@@ -464,8 +464,7 @@ class siggui:
         #print(h2)
 
         br.select_form(nr=1)
-        oldsigtmp = br["signature"]
-        oldsig = str(oldsigtmp, "utf-8")
+        oldsig = br["signature"]
         br["signature"] = text
         r3 = br.submit(name='submit')
         h3 = r3.read()
