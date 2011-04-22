@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# File: ubuntu-gr_signature.py
+# File: forum_signature.py
 # Purpose: Proposes a signature with useful hardware/software information to forum newcomers/newbies
 # Requires: python 2.5, python-gtk2, python-mechanize
 
@@ -65,7 +65,9 @@ class core:
         # Dictionary for dicreplace()
         self.dic = {
             "MICRO-STAR INTERNATIONAL CO.,LTD": "MSI",
+            "MICRO-STAR INTERNATIONAL CO., LTD": "MSI",
             "Atheros Communications, Inc.": "Atheros",
+            "ATI Technologies Inc": "ATI",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
             "ASUSTeK Computer": "ASUS",
             "Intel Corporation": "Intel",
