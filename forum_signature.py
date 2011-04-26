@@ -68,6 +68,7 @@ class core:
             "MICRO-STAR INTERNATIONAL CO., LTD": "MSI",
             "Marvell Technology Group Ltd.": "Marvell",
             "Broadcom Corporation": "Broadcom",
+            "Silicon Integrated Systems [SiS]": "SiS",
             "Atheros Communications, Inc.": "Atheros",
             "ATI Technologies Inc": "ATI",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
