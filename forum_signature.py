@@ -62,7 +62,7 @@ class core:
     def __init__(self):
         self.pyversion = platform.python_version()
         self.unknown = "�" # Character/string for unknown data
-        # Dictionary for dicreplace()
+        # Dictionary for dicreplace(), executed at returnall()
         self.dic = {
             "MICRO-STAR INTERNATIONAL CO.,LTD": "MSI",
             "MICRO-STAR INTERNATIONAL CO., LTD": "MSI",
@@ -88,6 +88,12 @@ class core:
             "     ": " ",
             "  @ ": " ",
         }
+        # Array for removing default motherboard vendor values
+        self.defcoreid = [
+            "System manufacturer",
+            "System Product Name",
+            "To Be Filled By O.E.M.",
+        ]
         self.info = {
             "cpu": self.unknown,
             "memory": self.unknown,
@@ -201,22 +207,34 @@ class core:
         }
         # Read files and strip whitespace
         try:
-            s = {
+            self.coreid = {
                 "board_vendor": self.getfile(f["board_vendor"]).strip(),
                 "board_name": self.getfile(f["board_name"]).strip(),
                 "sys_vendor": self.getfile(f["sys_vendor"]).strip(),
                 "product_name": self.getfile(f["product_name"]).strip(),
             }
+            # Drop default motherboard id values
+            self.deldefcoreid()
         except IOError:
             # If files are not found
             t = [self.unknown, self.unknown]
             return t
         # Return an array of two strings
         t = [
-            "%s %s" % (s["board_vendor"], s["board_name"]),
-            "%s %s" % (s["sys_vendor"], s["product_name"])
+            "%s %s" % (self.coreid["board_vendor"], self.coreid["board_name"]),
+            "%s %s" % (self.coreid["sys_vendor"], self.coreid["product_name"])
         ]
         return t
+
+    def deldefcoreid(self):
+        # Deletes default motherboard id, matches self.defcoreid array
+        # self.coreid = dictionary from getcoreinfo()
+        c = self.coreid
+        for x in c.keys():
+            for d in self.defcoreid:
+                if c[x] == d:
+                    # If value in key matches default, clear it
+                    self.coreid[x] = self.unknown
 
     def dicreplace(self, text):
         # self.dic is already prepared
