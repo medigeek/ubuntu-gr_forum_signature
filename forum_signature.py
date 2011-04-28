@@ -180,14 +180,17 @@ class core:
 
     def shortencoreid(self):
         # Shorten the machine/motherboard id and manufacturer
-        if self.info["core"][0] == self.info["core"][1]:
-            s = self.info["core"][0]
-        elif self.info["core"][0] == self.unknown and not self.info["core"][1] == self.unknown:
-            s = self.info["core"][1]
-        elif not self.info["core"][0] == self.unknown and self.info["core"][1] == self.unknown:
-            s = self.info["core"][0]
+        u = self.unknown # "�"
+        u2 = "%s %s" % (u, u) # "� �"
+        c = self.info["core"]
+        if c[0] == c[1]:
+            s = c[0]
+        elif c[0] in (u,u2) and not c[1] in (u,u2):
+            s = c[1]
+        elif not c[0] in (u,u2) and c[1] in (u,u2):
+            s = c[0]
         else:
-            s = " - ".join(self.info["core"])
+            s = " - ".join(c)
         return s
 
     def getinfo(self):
@@ -213,6 +216,8 @@ class core:
                 "sys_vendor": self.getfile(f["sys_vendor"]).strip(),
                 "product_name": self.getfile(f["product_name"]).strip(),
             }
+            self.coreid["sys_vendor"] = "System manufacturer"
+            self.coreid["product_name"] = "System Product Name"
             # Drop default motherboard id values
             self.deldefcoreid()
         except IOError:
