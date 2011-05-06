@@ -216,8 +216,11 @@ class core:
                 "sys_vendor": self.getfile(f["sys_vendor"]).strip(),
                 "product_name": self.getfile(f["product_name"]).strip(),
             }
-            self.coreid["sys_vendor"] = "System manufacturer"
-            self.coreid["product_name"] = "System Product Name"
+            # Testing deldefcoreid()
+            #self.coreid["board_vendor"] = "ASUS INC."
+            #self.coreid["board_name"] = "P5Q"
+            #self.coreid["sys_vendor"] = "System manufacturer"
+            #self.coreid["product_name"] = "P5Q"
             # Drop default motherboard id values
             self.deldefcoreid()
         except IOError:
