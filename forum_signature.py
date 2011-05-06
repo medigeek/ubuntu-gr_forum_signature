@@ -70,6 +70,7 @@ class core:
             "Broadcom Corporation": "Broadcom",
             "Silicon Integrated Systems [SiS]": "SiS",
             "Atheros Communications, Inc.": "Atheros",
+            "Atheros Communications": "Atheros",
             "ATI Technologies Inc": "ATI",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
             "ASUSTeK Computer": "ASUS",
