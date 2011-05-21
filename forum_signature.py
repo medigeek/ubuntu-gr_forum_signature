@@ -120,7 +120,7 @@ class core:
         t = self.dicreplace(text)
         t2 = re.sub(r"\[?(\w{4}:\w{4})\]?", r"⎨\1⎬", t)
         #t2 = t
-        return t2
+        return t
 
     def knowledge(self):
         s = {   "linux": self.unknown,
@@ -307,7 +307,7 @@ class core:
         match = re.findall("model name\s+:\s+(.+)", s)
         x = match[0]
         num = len(match) # Number of the cpu cores
-        cpu = "CPU: %sx %s" % (num, x)
+        cpu = "%sx %s" % (num, x)
         return cpu
 
     def getmeminfo(self):
@@ -467,10 +467,17 @@ class siggui:
         except ImportError:
             return (1,"Σφάλμα: Δεν έχετε εγκατεστημένο το python-mechanize.\nΓια να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize")
         br = m.Browser()
-        br.set_handle_referer(True)
-        br.set_handle_redirect(True)
-        br.set_handle_equiv(True)
+        #('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'),
+        br.addheaders = [
+            ('Accept-Charset', 'ISO-8859-1,utf-8;q=0.7,*;q=0.7'),
+            ('Accept-Language', 'Accept-Language: en-us,en;q=0.7,el;q=0.3'),
+            ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
+        ]
+        #br.set_handle_redirect(True)
+        #br.set_handle_equiv(True)
         #br.set_handle_gzip(True)
+        br.set_handle_referer(True)
+        br.set_handle_robots(False)
         br.set_handle_refresh(m._http.HTTPRefreshProcessor(), max_time=1)
 
         br.open("http://forum.ubuntu-gr.org/ucp.php?i=profile&mode=signature")
@@ -478,8 +485,8 @@ class siggui:
         br.select_form(nr=1) # Select login form (no name for the form)
         br["username"] = self.username
         br["password"] = self.password
-        response1 = br.submit()
-        h1 = response1.read()
+        r1 = br.submit()
+        h1 = r1.read()
 
         m = re.search('<div class="error">(.*)</div>', h1)
         if m:
@@ -499,6 +506,18 @@ class siggui:
         br.select_form(nr=1)
         oldsig = br["signature"]
         br["signature"] = text
+        #print(br.form)
+
+        # Debug!
+        #import logging
+        #import sys
+        #br.set_debug_http(True)
+        #br.set_debug_redirects(True)
+        #br.set_debug_responses(True)
+        #logger = logging.getLogger("mechanize")
+        #logger.addHandler(logging.StreamHandler(sys.stdout))
+        #logger.setLevel(logging.INFO)
+
         r3 = br.submit(name='submit')
         h3 = r3.read()
         #print(h3)
@@ -537,3 +556,4 @@ def timeit():
 if __name__ == "__main__":
     main()
     #timeit()
+
