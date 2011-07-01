@@ -35,7 +35,7 @@ if platform.system() != "Linux":
     exit('ERROR: This script is built for GNU/Linux platforms (for now)')
 
 import os
-
+import os.path
 import re
 import subprocess
 import time
@@ -131,16 +131,7 @@ class core:
                 (s["linux"], s["programming"], s["english"])
 
     def osinfo(self):
-        # ('Ubuntu', '10.10', 'maverick')
-        try:
-            d = platform.linux_distribution()
-        except AttributeError:
-            d = platform.dist() # For python versions < 2.6
-        distrib = ' '.join(d)
-        lang = self.oslang()
-        arch_type = self.machinearch()
-        s = "2 Λειτουργικό → %s %s (%s)" % (distrib, arch_type, lang)
-        return s
+        return "TODO"
 
     def specs(self):
         core = self.shortencoreid()
@@ -152,20 +143,6 @@ class core:
             self.info["network"]
         )
         return text
-
-    def oslang(self):
-        lang = os.getenv("LANG", "en_US") # Assume en_US if LANG var not set
-        return lang  
-
-    def machinearch(self):
-        m = platform.machine()
-        if m == "x86_64":
-            mtype = "64-bit"
-        elif m == "i386" or m == "i686":
-            mtype = "32-bit"
-        else:
-            mtype = "%s-bit" % self.unknown
-        return mtype
 
     def choosesudo(self):
         x = os.getenv('DESKTOP_SESSION', None)
@@ -536,6 +513,132 @@ class siggui:
         self.statusmsg("Submitted to forum!")
         return (0,oldsig)
 
+class osgrubber:
+    """ Retrieves information about installed operating systems. """
+    def __init__(self):
+        self.oslist = list()
+        self.result = ""
+        result = self.read_grub() # Sets self.oslist array
+        self.currentos()
+        #self.printall()
+
+    def printall(self):
+        print(self.result)
+
+    def returnall(self):
+        return self.result
+
+    def is_currentos(self, osline):
+        """ Detect current os (based on linux version) in self.oslist
+            Returns True/False
+        """
+        un = platform.uname()
+        #('Linux', 'home-desktop', '2.6.38-8-generic', '#42-Ubuntu SMP Mon Apr 11 03:31:24 UTC 2011', 'x86_64', 'x86_64')
+        if not un[0] == "Linux":
+            return False
+        currlinver = un[2].replace('.', '\.') #escape dots (regex)
+        if re.search(currlinver, osline):
+            # If current linux version is found in a grub os line
+            return True
+        return False
+
+    def currentos(self):
+        if self.is_wubi():
+            wubi = "wubi"
+        else:
+            wubi = ""
+
+        arch_type = self.machinearch()
+        curroslist = [self.osinfo(), arch_type, wubi]
+        currosstr = ' '.join(curroslist).rstrip()
+        lang = self.oslang()
+        osstr = ', '.join(self.oslist)
+
+        self.result = "2 Λειτουργικά → %s (%s), %s" % (currosstr, lang, osstr)
+
+    def osinfo(self):
+        # ('Ubuntu', '10.10', 'maverick')
+        try:
+            d = platform.linux_distribution()
+        except AttributeError:
+            d = platform.dist() # For python versions < 2.6
+        distrib = ' '.join(d)
+        return distrib
+
+    def oslang(self):
+        lang = os.getenv("LANG", "en_US") # Assume en_US if LANG var not set
+        return lang  
+
+    def machinearch(self):
+        m = platform.architecture()
+        #('64bit', 'ELF')
+        return m[0]
+
+    def read_grub(self):
+        """ Retrieves operating systems from grub configuration file.
+            Sets self.oslist array
+            Returns True/False
+        """
+        #Does grub.cfg exist?
+        grubcfg = "/boot/grub/grub.cfg"
+        if not os.path.isfile(grubcfg):
+            return False
+
+        #getfile
+        f = open(grubcfg, "r")
+        a = list(f.readlines())
+        lines = ''.join(a)
+        f.close()
+        #menuentry "Windows 7 (loader) (on /dev/sdc1)"
+        #menuentry 'Ubuntu, with Linux 2.6.35-28-generic'
+        matches = re.findall("^menuentry\s+['\"]([^'\"]*)['\"]", lines, re.M)
+        if not matches:
+            return False
+        for i in matches:
+            # Drop memtest and recovery modes
+            if not re.search("recovery|memtest", i, re.I):
+                if re.search("linux", i, re.I):
+                    #Ubuntu, with Linux 2.6.38-8-generic
+                    osline = re.sub(", with Linux", "", i, re.I)
+                elif re.search("windows", i, re.I):
+                    #Windows 7 (on /dev/sdc1)
+                    osline = re.search("(Windows(\s+[^\(]+)?)", i, re.I).group(0)
+                    osline = osline.rstrip() # clear spaces on right side
+                else:
+                    osline = i
+                if not self.is_currentos(osline):
+                    self.oslist.append(osline)
+        return True
+
+    def is_wubi(self):
+        # Detects wubi installation
+        # Scans /etc/fstab for loop devices as root "/" and swap
+        fstabfile = "wubi/plain3.txt" # /etc/fstab
+        if not os.path.isfile(fstabfile):
+            return False
+        f = open(fstabfile, "r")
+        a = list(f.readlines())
+        lines = ''.join(a)
+        f.close()
+        #print(lines)
+        matches = re.findall("^([^#][^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)", lines, re.M)
+        #Returns: [('proc', '/proc', 'proc', 'nodev,noexec,nosuid'),
+        #('/host/ubuntu/disks/root.disk', '/', 'ext4', 'loop,errors=remount-ro'),
+        #('/host/ubuntu/disks/swap.disk', 'none', 'swap', 'loop,sw')]
+
+        # Wubi uses a feature called "loop device" to load its root/swap files.
+        root_looped = False
+        swap_looped = False
+        for dev,mpoint,part,opts in matches:
+            if mpoint == "/" and re.match("loop", opts):
+                root_looped = True
+            if part == "swap" and re.match("loop", opts):
+                swap_looped = True
+        if root_looped and swap_looped:
+            return True
+        else:
+            return False
+
 def main():
     text = core().returnall()
     if textonly:
@@ -554,6 +657,7 @@ def timeit():
     print(t.timeit(number=1000))
 
 if __name__ == "__main__":
-    main()
+    #main()
     #timeit()
+    osgrubber().printall()
 
