@@ -21,10 +21,10 @@
 
 """ Example of signature:
 1 Γνώσεις → Linux: � ┃ Προγραμματισμός: � ┃ Αγγλικά: �
-2 Λειτουργικό → Ubuntu 10.10 maverick 64-bit (en_GB.utf8)
-3 Προδιαγραφές → CPU: 2x Intel Core2 Duo CPU E6550 2.33GHz ‖ RAM 3961 MiB ‖ MSI MS-7235
-4 Κάρτες γραφικών: nVidia G73 [GeForce 7300 GT] ⎨10de:0393⎬ (rev a1)
-5 Δίκτυα: eth0: Realtek RTL-8110SC/8169SC Gigabit Ethernet ⎨10ec:8167⎬ (rev 10) ⋮ eth1: Realtek RTL-8139/8139C/8139C+ ⎨10ec:8139⎬ (rev 10)
+2 Λειτουργικά → Ubuntu 11.04 natty 64bit wubi (en_GB.utf8), Ubuntu 2.6.35-28-generic, Windows 7
+3 Προδιαγραφές → 2x Intel Core2 Duo CPU E6550 2.33GHz ‖ RAM 3961 MiB ‖ MSI MS-7235
+4 Κάρτες γραφικών: nVidia G73 [GeForce 7300 GT] [10de:0393] (rev a1)
+5 Δίκτυα: eth0: Realtek RTL-8110SC/8169SC Gigabit Ethernet [10ec:8167] (rev 10) ⋮ eth1: Realtek RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
 """
 
 import platform
@@ -34,6 +34,7 @@ if pyversion < '2.5':
 if platform.system() != "Linux":
     exit('ERROR: This script is built for GNU/Linux platforms (for now)')
 
+import sys
 import os
 import os.path
 import re
@@ -47,7 +48,8 @@ try:
     pygtk.require('2.0')
     import gtk
 except ImportError:
-    print("ERROR: Could not load gtk module")
+    sys.stderr.write("ERROR: Could not load gtk module\n")
+    sys.stderr.flush()
     textonly = True
 try:
     try:
@@ -55,11 +57,13 @@ try:
     except ImportError:
         import glib
 except ImportError:
-    print("ERROR: Could not load glib/gobject module")
+    sys.stderr.write("ERROR: Could not load glib/gobject module\n")
+    sys.stderr.flush()
     textonly = True
 
 class core:
-    def __init__(self):
+    def __init__(self, osgrubber):
+        self.osgrubbertuple = osgrubber
         self.pyversion = platform.python_version()
         self.unknown = "�" # Character/string for unknown data
         # Dictionary for dicreplace(), executed at returnall()
@@ -131,7 +135,22 @@ class core:
                 (s["linux"], s["programming"], s["english"])
 
     def osinfo(self):
-        return "TODO"
+        """ Calls osgrubber() class.
+            Input: tuple list (osinfo, arch_type, iswubi, lang, self.oslist)
+        """
+        t = self.osgrubbertuple
+        # is it wubi installation?
+        if t[2]:
+            wubi = "wubi"
+        else:
+            wubi = ""
+        curroslist = [t[0], t[1], wubi]
+        currosstr = ' '.join(curroslist).rstrip()
+        lang = t[3]
+        restofos = ', '.join(t[4])
+        s = "2 Λειτουργικά → %s (%s), %s" % (currosstr, lang, restofos)
+        #print(s)
+        return s
 
     def specs(self):
         core = self.shortencoreid()
@@ -321,7 +340,8 @@ class core:
 
 class siggui:
     """ The graphical user interface for timekpr configuration. """
-    def __init__(self, text):
+    def __init__(self, text, iswubi):
+        self.is_wubi = iswubi
         self.unknown = "�"
         self.username = ""
         self.password = ""
@@ -355,6 +375,14 @@ class siggui:
         self.comboboxlinux.set_text_column(0)
         self.comboboxprogramming.set_text_column(0)
         self.comboboxenglish.set_text_column(0)
+        self.iswubi()
+    
+    def iswubi(self):
+        # Check if its wubi
+        if self.is_wubi == True:
+            s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Δε συστήνεται η εγκατάσταση μέσω wubi."
+            s2 = "Η εγκατάσταση που έχετε έγινε μέσω <span foreground='red'>wubi</span>. Τετοια εγκατάσταση συστήνεται μόνο για δοκιμαστικούς σκοπούς (<a href='http://wiki.ubuntu-gr.org/whynotwubi'>διαβάστε τους λόγους</a>).\nΔιαβάστε στους <a href='http://forum.ubuntu-gr.org/viewtopic.php?f=9&amp;t=859'>οδηγούς/how to/tutorials</a> πώς να κάνετε σωστή εγκατάσταση."
+            self.messagedialog(s, s2)
 
     def statusmsg(self, message):
         msg = "%s %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), message)
@@ -430,8 +458,9 @@ class siggui:
         # DIALOG - Password
         self.password = self.entry2.get_text()
 
-    def messagedialog(self, msg):
-        self.errormsg.set_markup(msg)
+    def messagedialog(self, msg1, msg2):
+        self.errormsg.set_markup(msg1)
+        self.errormsg.format_secondary_markup(msg2)
         dialogreply = self.errormsg.run()
         self.errormsg.hide()
 
@@ -442,7 +471,10 @@ class siggui:
         try:
             m = __import__("mechanize")
         except ImportError:
-            return (1,"Σφάλμα: Δεν έχετε εγκατεστημένο το python-mechanize.\nΓια να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize")
+            errormsg1 = "<b>ΣΦΑΛΜΑ</b>: Δεν έχετε εγκατεστημένο το python-mechanize."
+            errormsg2 = "Για να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize"
+            self.messagedialog(errormsg1, errormsg2)
+            return (1, errormsg1)
         br = m.Browser()
         #('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'),
         br.addheaders = [
@@ -469,9 +501,12 @@ class siggui:
         if m:
             errormsg = m.group(1)
             if re.search("Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης", errormsg):
-                errormsg = 'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης. Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης.\nΓια να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
+                errormsg1 = 'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης.'
+                errormsg2 = 'Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης. Για να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg1, errormsg2)
+            else:
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg, "")
             self.statusmsg("Σφάλμα: %s" % errormsg)
-            self.messagedialog("Σφάλμα: %s" % errormsg)
             return (1,"Σφάλμα: %s" % errormsg)
             #print("Error: %s" % errormsg)
         #print(h1)
@@ -487,7 +522,6 @@ class siggui:
 
         # Debug!
         #import logging
-        #import sys
         #br.set_debug_http(True)
         #br.set_debug_redirects(True)
         #br.set_debug_responses(True)
@@ -503,7 +537,7 @@ class siggui:
         if m:
             errormsg = m.group(1)
             self.statusmsg("Σφάλμα: %s" % errormsg)
-            self.messagedialog("Σφάλμα: %s" % errormsg)
+            self.messagedialog("Σφάλμα: %s" % errormsg, "")
             return (1,"Σφάλμα: %s" % errormsg)
 
         r4 = br.follow_link(url_regex='ucp\.php.*mode=logout')
@@ -519,11 +553,11 @@ class osgrubber:
         self.oslist = list()
         self.result = ""
         result = self.read_grub() # Sets self.oslist array
-        self.currentos()
-        #self.printall()
+        self.finalize()
 
     def printall(self):
-        print(self.result)
+        import pprint
+        pprint.pprint(self.result)
 
     def returnall(self):
         return self.result
@@ -542,19 +576,31 @@ class osgrubber:
             return True
         return False
 
-    def currentos(self):
+    def finalize(self):
+        """ Finalizes the processing.
+            Returns a tuple list: (osinfo, arch_type, iswubi, lang, self.oslist)
+        """
+        iswubi = self.is_wubi()
         if self.is_wubi():
             wubi = "wubi"
         else:
             wubi = ""
 
         arch_type = self.machinearch()
-        curroslist = [self.osinfo(), arch_type, wubi]
-        currosstr = ' '.join(curroslist).rstrip()
+        osinfo = self.osinfo()
         lang = self.oslang()
-        osstr = ', '.join(self.oslist)
 
-        self.result = "2 Λειτουργικά → %s (%s), %s" % (currosstr, lang, osstr)
+        """ Example:
+            ('Ubuntu 11.04 natty 64bit wubi',
+             'en_GB.utf8',
+             'Ubuntu 2.6.35-28-generic, Windows 7',
+             'Ubuntu 11.04 natty',
+             '64bit',
+             True,
+             ['Ubuntu 2.6.35-28-generic', 'Windows 7'])
+        """
+        #('Ubuntu 11.04 natty', '64bit', True, 'en_GB.utf8', ('Ubuntu 2.6.35-28-generic', 'Windows 7'))
+        self.result = (osinfo, arch_type, iswubi, lang, self.oslist)
 
     def osinfo(self):
         # ('Ubuntu', '10.10', 'maverick')
@@ -613,7 +659,8 @@ class osgrubber:
     def is_wubi(self):
         # Detects wubi installation
         # Scans /etc/fstab for loop devices as root "/" and swap
-        fstabfile = "wubi/plain3.txt" # /etc/fstab
+        #return True # Uncomment this for testing
+        fstabfile = "/etc/fstab" # /etc/fstab
         if not os.path.isfile(fstabfile):
             return False
         f = open(fstabfile, "r")
@@ -635,18 +682,24 @@ class osgrubber:
             if part == "swap" and re.match("loop", opts):
                 swap_looped = True
         if root_looped and swap_looped:
+            sys.stderr.write("WARNING: wubi installation detected.\n")
+            sys.stderr.flush()
             return True
         else:
             return False
 
 def main():
-    text = core().returnall()
+    t = osgrubber().returnall()
+    #(osinfo, arch_type, iswubi, lang, self.oslist)
+
+    text = core(t).returnall()
     if textonly:
-        print("Could not load gtk/glib/gobject modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
+        sys.stderr.write("Could not load gtk/glib/gobject modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
+        sys.stderr.flush()
         print(text)
     else:
         print(text)
-        siggui(text)
+        siggui(text, t[2])
         gtk.main()
 
 def timeit():
@@ -657,7 +710,6 @@ def timeit():
     print(t.timeit(number=1000))
 
 if __name__ == "__main__":
-    #main()
+    main()
     #timeit()
-    osgrubber().printall()
 
