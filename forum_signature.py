@@ -591,15 +591,6 @@ class osgrubber:
         osinfo = self.osinfo()
         lang = self.oslang()
 
-        """ Example:
-            ('Ubuntu 11.04 natty 64bit wubi',
-             'en_GB.utf8',
-             'Ubuntu 2.6.35-28-generic, Windows 7',
-             'Ubuntu 11.04 natty',
-             '64bit',
-             True,
-             ['Ubuntu 2.6.35-28-generic', 'Windows 7'])
-        """
         #('Ubuntu 11.04 natty', '64bit', True, 'en_GB.utf8', ('Ubuntu 2.6.35-28-generic', 'Windows 7'))
         self.result = (osinfo, arch_type, iswubi, lang, self.oslist)
 
