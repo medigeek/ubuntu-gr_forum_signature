@@ -278,16 +278,17 @@ class core:
             pciids = re.findall("v0000([0-9A-Z]+)d0000([0-9A-Z]+)s", s)
             #USB: v*p*d => [('0CF3', '1002')]
             usbids = re.findall("v([0-9A-Z]+)p([0-9A-Z]+)d", s)
+            append = netcards.append # PythonSpeed/PerformanceTips
             if pciids:
                 #04:01.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
                 mp = ":\s(.*%s:%s.*)" % (pciids[0][0], pciids[0][1])
                 pcidesc = re.findall(mp, self.lspci, re.M+re.I)
-                netcards.append("%s: %s" % (name, pcidesc[0]))
+                append("%s: %s" % (name, pcidesc[0]))
             if usbids:
                 #Bus 002 Device 004: ID 0cf3:1002 Atheros Communications, Inc. TP-Link TL-WN821N v2 [Atheros AR9001U-(2)NG]
                 mu = ":\sID\s(%s:%s.*)" % (usbids[0][0], usbids[0][1])
                 usbdesc = re.findall(mu, self.lsusb, re.M+re.I)
-                netcards.append("%s: %s" % (name, usbdesc[0]))
+                append("%s: %s" % (name, usbdesc[0]))
         network = ' ⋮ '.join(netcards)
         return network
 
@@ -640,12 +641,14 @@ class osgrubber:
         matches = re.findall("^menuentry\s+['\"]([^'\"]*)['\"]", lines, re.M)
         if not matches:
             return False
+        
+        append = self.oslist.append # PythonSpeed/PerformanceTips
         for i in matches:
             # Drop memtest and recovery modes
-            if not re.search("recovery|memtest", i, re.I):
+            if not re.search("recovery|memtest|ανάκτηση", i, re.I):
                 if re.search("linux", i, re.I):
                     #Ubuntu, with Linux 2.6.38-8-generic
-                    osline = re.sub(", with Linux", "", i, re.I)
+                    osline = re.sub(",\s?(?:with|με)? Linux", "", i, re.I)
                 elif re.search("windows", i, re.I):
                     #Windows 7 (on /dev/sdc1)
                     osline = re.search("(Windows(\s+[^\(]+)?)", i, re.I).group(0)
@@ -653,7 +656,7 @@ class osgrubber:
                 else:
                     osline = i
                 if not self.is_currentos(osline):
-                    self.oslist.append(osline)
+                    append(osline)
         return True
 
     def is_wubi(self):
@@ -703,11 +706,12 @@ def main():
         gtk.main()
 
 def timeit():
-    #import cProfile
-    #cProfile.run('main()')
+    f = 'core(osgrubber().returnall()).returnall()'
+    import cProfile
+    cProfile.run(f)
     import timeit
-    t = timeit.Timer('main()', 'from __main__ import main')
-    print(t.timeit(number=1000))
+    t = timeit.Timer(f, 'from __main__ import osgrubber, core')
+    print(t.timeit(number=100))
 
 if __name__ == "__main__":
     main()
