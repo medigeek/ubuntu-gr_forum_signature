@@ -301,10 +301,13 @@ class core:
     def getcpuinfo(self):
         f = "/proc/cpuinfo"
         s = self.getfile(f)
-        match = re.findall("model name\s+:\s+(.+)", s)
-        x = match[0]
-        num = len(match) # Number of the cpu cores
-        cpu = "%sx %s" % (num, x)
+        # Processor model name
+        match = re.search("model name\s+:\s+(.+)", s)
+        x = match.group(1)
+        # Number of cpu cores
+        match2 = re.search("cpu cores\s+:\s+(.+)", s)
+        z = match2.group(1)
+        cpu = "%sx %s" % (z, x)
         return cpu
 
     def getmeminfo(self):
