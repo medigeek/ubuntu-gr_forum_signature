@@ -304,10 +304,12 @@ class core:
         # Processor model name
         match = re.search("model name\s+:\s+(.+)", s)
         x = match.group(1)
-        # Number of cpu cores
-        match2 = re.search("cpu cores\s+:\s+(.+)", s)
-        z = match2.group(1)
-        cpu = "%sx %s" % (z, x)
+        # TODO: http://goo.gl/4k90P
+        ## Number of cpu cores
+        #match2 = re.search("cpu cores\s+:\s+(.+)", s)
+        #z = match2.group(1)
+        #cpu = "%sx %s" % (z, x)
+        cpu = x
         return cpu
 
     def getmeminfo(self):
@@ -686,13 +688,16 @@ class osgrubber:
             return False
 
 def main():
+    global textonly
     t = osgrubber().returnall()
     #(osinfo, arch_type, iswubi, lang, self.oslist)
 
     text = core(t).returnall()
+    if len(sys.argv) > 1 and sys.argv[1] == "--text":
+        textonly = True
     if textonly:
-        sys.stderr.write("Could not load gtk/glib/gobject modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
-        sys.stderr.flush()
+        #sys.stderr.write("Could not load gtk/glib/gobject modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
+        #sys.stderr.flush()
         print(text)
     else:
         print(text)
