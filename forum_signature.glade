@@ -12,6 +12,7 @@
     <property name="type_hint">normal</property>
     <property name="urgency_hint">True</property>
     <property name="gravity">center</property>
+    <property name="transient_for">window1</property>
     <signal name="delete-event" handler="gtk_false" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkVBox" id="dialog-vbox1">
