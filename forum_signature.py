@@ -71,10 +71,12 @@ class core:
             "MICRO-STAR INTERNATIONAL CO.,LTD": "MSI",
             "MICRO-STAR INTERNATIONAL CO., LTD": "MSI",
             "Marvell Technology Group Ltd.": "Marvell",
+            "Hewlett-Packard HP": "HP",
             "Broadcom Corporation": "Broadcom",
             "Silicon Integrated Systems [SiS]": "SiS",
             "Atheros Communications, Inc.": "Atheros",
             "Atheros Communications": "Atheros",
+            "Atheros Inc.": "Atheros",
             "ATI Technologies Inc": "ATI",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
             "ASUSTeK Computer": "ASUS",
@@ -122,8 +124,6 @@ class core:
         z = self.specs()
         text = "%s\n%s\n%s" % (x, y, z)
         t = self.dicreplace(text)
-        t2 = re.sub(r"\[?(\w{4}:\w{4})\]?", r"⎨\1⎬", t)
-        #t2 = t
         return t
 
     def knowledge(self):
@@ -696,8 +696,6 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--text":
         textonly = True
     if textonly:
-        #sys.stderr.write("Could not load gtk/glib/gobject modules (python version: %s). Falling back to terminal output only.\n" % pyversion)
-        #sys.stderr.flush()
         print(text)
     else:
         print(text)
