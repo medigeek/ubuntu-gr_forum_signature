@@ -375,14 +375,59 @@ class siggui:
         self.dialog.set_default_response(gtk.RESPONSE_CANCEL)
         self.entry1 = self.builder.get_object("entry1")
         self.entry2 = self.builder.get_object("entry2")
+        # BUG REPORT DIALOG
+        self.reportbugdialog = self.builder.get_object("reportbug")
+        self.textboxbuf3 = self.builder.get_object("textview3")
         # ERROR MESSAGE DIALOG
         self.errormsg = self.builder.get_object("messagedialog1")
         # Ubuntu Hardy 8.04 compatibility
         self.comboboxlinux.set_text_column(0)
         self.comboboxprogramming.set_text_column(0)
         self.comboboxenglish.set_text_column(0)
+        # CHECK WUBI
         self.iswubi()
-    
+
+    def on_button7_clicked(self, widget):
+        self.reportbug()
+
+    def reportbug(self):
+        p = subprocess.Popen(["cat", "/proc/cpuinfo"], stdout=subprocess.PIPE)
+        outcpu = p.communicate()[0]
+
+        p = subprocess.Popen(["cat", "/proc/meminfo"], stdout=subprocess.PIPE)
+        outmem = p.communicate()[0]
+
+        p = subprocess.Popen(["lspci", "-nn"], stdout=subprocess.PIPE)
+        outlspci = p.communicate()[0]
+
+        p = subprocess.Popen("lsusb", stdout=subprocess.PIPE)
+        outlsusb = p.communicate()[0]
+
+        (start, end) = self.textboxbuf.get_bounds()
+        sigtext = self.textboxbuf.get_text(start, end)
+
+        text = "Περιγράψτε το πρόβλημα στη θέση αυτού του κειμένου.\n\
+Επισυνάψτε σφάλμα από το τερματικό (αν υπάρχει).\n\n\
+------------------------\n\
+Πληροφορίες:[code]\n\
+* cpuinfo\n{0}\n\
+* meminfo:\n{1}\n\
+* lspci:\n{2}\n\
+* lsusb:\n{3}\n\
+* signature:\n{4}\n\
+[/code]".format(outcpu, outmem, outlspci, outlsusb, sigtext)
+
+        # SAVE TO CLIPBOARD
+        clipboard = gtk.clipboard_get()
+        clipboard.set_text(text)
+        clipboard.store()
+
+        buf = self.textboxbuf3.get_buffer()
+        buf.set_text(text)
+        dialogreply = self.reportbugdialog.run()
+        #print("%s %s" % (type(dialogreply), dialogreply))
+        self.reportbugdialog.hide()
+
     def iswubi(self):
         # Check if its wubi
         if self.is_wubi == True:
