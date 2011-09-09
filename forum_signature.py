@@ -76,9 +76,11 @@ class core:
             "Silicon Integrated Systems [SiS]": "SiS",
             "Atheros Communications, Inc.": "Atheros",
             "Atheros Communications": "Atheros",
+            "Acer, Inc.": "Acer",
             "Atheros Inc.": "Atheros",
             "ATI Technologies Inc": "ATI",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
+            "VIA Technologies, Inc.": "VIA",
             "ASUSTeK Computer": "ASUS",
             "Intel Corporation": "Intel",
             "Apple Inc.": "Apple",
@@ -346,7 +348,8 @@ class core:
 
 class siggui:
     """ The graphical user interface for timekpr configuration. """
-    def __init__(self, text, iswubi):
+    def __init__(self, text, iswubi, debug=False):
+        self.debug = debug
         self.is_wubi = iswubi
         self.unknown = "�"
         self.username = ""
@@ -540,6 +543,17 @@ class siggui:
         br.set_handle_robots(False)
         br.set_handle_refresh(m._http.HTTPRefreshProcessor(), max_time=1)
 
+        # Debug!
+        if self.debug:
+            import logging
+            br.set_debug_http(True)
+            br.set_debug_redirects(True)
+            br.set_debug_responses(True)
+            logger = logging.getLogger("mechanize")
+            #logger.addHandler(logging.StreamHandler(sys.stdout))
+            logger.addHandler(logging.FileHandler("http.log"))
+            logger.setLevel(logging.DEBUG)
+
         br.open("http://forum.ubuntu-gr.org/ucp.php?i=profile&mode=signature")
         #self.statusmsg("Logging in...")
         br.select_form(nr=1) # Select login form (no name for the form)
@@ -570,15 +584,6 @@ class siggui:
         oldsig = br["signature"]
         br["signature"] = text
         #print(br.form)
-
-        # Debug!
-        #import logging
-        #br.set_debug_http(True)
-        #br.set_debug_redirects(True)
-        #br.set_debug_responses(True)
-        #logger = logging.getLogger("mechanize")
-        #logger.addHandler(logging.StreamHandler(sys.stdout))
-        #logger.setLevel(logging.INFO)
 
         r3 = br.submit(name='submit')
         h3 = r3.read()
@@ -734,17 +739,21 @@ class osgrubber:
 
 def main():
     global textonly
-    t = osgrubber().returnall()
+    o = osgrubber().returnall()
     #(osinfo, arch_type, iswubi, lang, self.oslist)
 
-    text = core(t).returnall()
-    if len(sys.argv) > 1 and sys.argv[1] == "--text":
-        textonly = True
+    text = core(o).returnall()
+    debug_app = False
+    if len(sys.argv) > 1:
+        if "--text" in sys.argv:
+            textonly = True
+        elif "--debug" in sys.argv:
+            debug_app = True
     if textonly:
         print(text)
     else:
         print(text)
-        siggui(text, t[2])
+        siggui(text, o[2], debug=debug_app)
         gtk.main()
 
 def timeit():
