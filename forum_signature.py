@@ -20,11 +20,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """ Example of signature:
-1 Γνώσεις → Linux: � ┃ Προγραμματισμός: � ┃ Αγγλικά: �
-2 Λειτουργικά → Ubuntu 11.04 natty 64bit wubi (en_GB.utf8), Ubuntu 2.6.35-28-generic, Windows 7
-3 Προδιαγραφές → 2x Intel Core2 Duo CPU E6550 2.33GHz ‖ RAM 3961 MiB ‖ MSI MS-7235
-4 Κάρτες γραφικών: nVidia G73 [GeForce 7300 GT] [10de:0393] (rev a1)
-5 Δίκτυα: eth0: Realtek RTL-8110SC/8169SC Gigabit Ethernet [10ec:8167] (rev 10) ⋮ eth1: Realtek RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
+1 Linux: � ┃ Προγραμματισμός: � ┃ Αγγλικά: �
+2 Ubuntu 11.04 natty 64bit (en_GB.utf8), Ubuntu 2.6.38-10-generic, Windows 7
+3 Intel Core2 Duo CPU E6550 2.33GHz ‖ RAM 3961 MiB ‖ MSI MS-7235
+4 nVidia G73 [GeForce 7300 GT] [10de:0393] (rev a1)
+5 eth0: Realtek RTL-8110SC/8169SC Gigabit Ethernet [10ec:8167] (rev 10) ⋮ eth1: Realtek RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
 """
 
 import platform
@@ -133,7 +133,7 @@ class core:
                 "programming": self.unknown,
                 "english": self.unknown
             }
-        return "1 Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+        return "1 Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
                 (s["linux"], s["programming"], s["english"])
 
     def osinfo(self):
@@ -150,13 +150,13 @@ class core:
         currosstr = ' '.join(curroslist).rstrip()
         lang = t[3]
         restofos = ', '.join(t[4])
-        s = "2 Λειτουργικά → %s (%s), %s" % (currosstr, lang, restofos)
+        s = "2 %s (%s), %s" % (currosstr, lang, restofos)
         #print(s)
         return s
 
     def specs(self):
         core = self.shortencoreid()
-        text = '3 Προδιαγραφές → %s ‖ RAM %s MiB ‖ %s\n4 Κάρτες γραφικών: %s\n5 Δίκτυα: %s' % \
+        text = '3 %s ‖ RAM %s MiB ‖ %s\n4 %s\n5 %s' % \
             (self.info["cpu"],
             self.info["memory"],
             core,
@@ -354,6 +354,7 @@ class siggui:
         self.unknown = "�"
         self.username = ""
         self.password = ""
+        self.sig_charlimit = 500 # Allowed number of characters
         # UI FILE
         self.uifile = "forum_signature.glade"
         self.builder = gtk.Builder()
@@ -362,8 +363,10 @@ class siggui:
         self.builder.connect_signals(self)
         # WINDOW
         self.window = self.builder.get_object("window1")
+        self.textbox_label = self.builder.get_object("label5") 
         self.textbox = self.builder.get_object("textview1") # new/pending sig
         self.textboxbuf = self.textbox.get_buffer()
+        self.textboxbuf.connect("changed", self.on_textboxbuf_changed)
         self.textboxbuf.set_text(text)
         self.textbox2 = self.builder.get_object("textview2") # old sig
         self.textboxbuf2 = self.textbox2.get_buffer()
@@ -390,6 +393,17 @@ class siggui:
         # CHECK WUBI
         self.iswubi()
 
+    def on_textboxbuf_changed(self, widget):
+        (start, end) = self.textboxbuf.get_bounds()
+        sigtext = self.textboxbuf.get_text(start, end)
+        self.sig_size = len(sigtext)
+        # Could use this to drop code tags: re.sub(r'\[([^\s]*).*?\](.*?)\[/\1\]', r'\2', text)
+        if self.sig_size > self.sig_charlimit:
+            l = "Υπογραφή: Χαρακτήρες: <span foreground='red'>%s</span> (Επιτρέπονται μέχρι %s χαρακτήρες)"
+        else:
+            l = "Υπογραφή: Χαρακτήρες: %s (Επιτρέπονται μέχρι %s χαρακτήρες)"
+        self.textbox_label.set_markup(l % (self.sig_size, self.sig_charlimit))
+
     def on_button7_clicked(self, widget):
         self.reportbug()
 
@@ -410,7 +424,7 @@ class siggui:
         sigtext = self.textboxbuf.get_text(start, end)
 
         text = "Περιγράψτε το πρόβλημα στη θέση αυτού του κειμένου.\n\
-Επισυνάψτε σφάλμα από το τερματικό (αν υπάρχει).\n\n\
+Επισυνάψτε σφάλμα από το τερματικό ή από το γραφικό περιβάλλον (αν υπάρχει).\n\n\
 ------------------------\n\
 Πληροφορίες:[code]\n\
 * cpuinfo\n{0}\n\
@@ -454,12 +468,12 @@ class siggui:
         linux = self.comboboxlinux.get_active_text()
         programming = self.comboboxprogramming.get_active_text()
         english = self.comboboxenglish.get_active_text()
-        self.line = "Γνώσεις → Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
+        self.line = "Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
             (linux, programming, english)
         (start, end) = self.textboxbuf.get_bounds()
         oldtext = self.textboxbuf.get_text(start, end) # get all text
         newtext = re.subn(
-            'Γνώσεις → Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
+            'Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
             self.line,
             oldtext
         ) # newtext is a touple ("newstring", times_of_substitution)
@@ -471,21 +485,23 @@ class siggui:
             else:
                 self.textboxbuf.set_text("%s\n%s" % (oldtext, self.line))
 
-    def on_button3_clicked(self, widget):
-        # Refresh
-        pass
-
     def on_button1_clicked(self, widget):
-        # Submit to forum
-        dialogreply = self.dialog.run()
-        if dialogreply == gtk.RESPONSE_APPLY:
-            #print("REPLY: %s (continue)" % dialogreply)
-            #print("User: %s Pass: %s" % (self.username, self.password))
-            self.statusmsg("Contacting forum...")
-            timeid = glib.timeout_add_seconds(1, self.webwrapper)
-        #elif dialogreply == gtk.RESPONSE_CANCEL or dialogreply == gtk.RESPONSE_DELETE_EVENT:
-            #print("REPLY: %s (cancel)" % dialogreply)
-        self.dialog.hide()
+        # Check size
+        if self.sig_size > self.sig_charlimit:
+            errormsg1 = 'Ξεπεράσατε το επιτρεπόμενο όριο χαρακτήρων!'
+            errormsg2 = 'Επιτρέπονται μέχρι 500 χαρακτήρες. Αλλάξτε την υπογραφή σας. Αν θέλετε να χρησιμοποιήσετε code tags, ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
+            self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg1, errormsg2)
+        else:
+            # Submit to forum
+            dialogreply = self.dialog.run()
+            if dialogreply == gtk.RESPONSE_APPLY:
+                #print("REPLY: %s (continue)" % dialogreply)
+                #print("User: %s Pass: %s" % (self.username, self.password))
+                self.statusmsg("Contacting forum...")
+                timeid = glib.timeout_add_seconds(1, self.webwrapper)
+            #elif dialogreply == gtk.RESPONSE_CANCEL or dialogreply == gtk.RESPONSE_DELETE_EVENT:
+                #print("REPLY: %s (cancel)" % dialogreply)
+            self.dialog.hide()
 
     def webwrapper(self):
         webreply = self.sendtoweb()
@@ -526,7 +542,7 @@ class siggui:
             m = __import__("mechanize")
         except ImportError:
             errormsg1 = "<b>ΣΦΑΛΜΑ</b>: Δεν έχετε εγκατεστημένο το python-mechanize."
-            errormsg2 = "Για να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize"
+            errormsg2 = 'Για να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize. Αλλιώς ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
             self.messagedialog(errormsg1, errormsg2)
             return (1, errormsg1)
         br = m.Browser()
