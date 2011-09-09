@@ -592,8 +592,13 @@ class siggui:
         m = re.search('<p class="error">(.*)</p>', h3)
         if m:
             errormsg = m.group(1)
+            if re.search("Η υποβληθείσα μορφή ήταν άκυρη", errormsg):
+                errormsg1 = 'Η υποβληθείσα μορφή ήταν άκυρη'
+                errormsg2 = 'Προσπαθήστε πάλι. Σε περίπτωση που επαναληφθεί, ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg1, errormsg2)
+            else:
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg, "")
             self.statusmsg("Σφάλμα: %s" % errormsg)
-            self.messagedialog("Σφάλμα: %s" % errormsg, "")
             return (1,"Σφάλμα: %s" % errormsg)
 
         r4 = br.follow_link(url_regex='ucp\.php.*mode=logout')
