@@ -90,6 +90,7 @@ class core:
             "Realtek Semiconductor Co., Ltd.": "Realtek",
             "nVidia Corporation": "nVidia",
             "ASUS INC.": "ASUS",
+            "Ralink corp.": "Ralink",
             "(R)": "",
             "(TM)": "",
             "(r)": "",
