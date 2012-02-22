@@ -61,7 +61,7 @@ except ImportError:
     parser.add_option('-d', '--debug', action='store_true',
         default=False, help='Debug (print out useful debug data)')
     parser.add_option('-t', '--text-only',
-        action='store_false', default=False,
+        action='store_true', default=False,
         help='Print to console/terminal only')
     (args, args2) = parser.parse_args()
 
