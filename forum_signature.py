@@ -485,8 +485,10 @@ class siggui:
         if self.more_than_two:
             mt2 = ' '.join(self.more_than_two)
             s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Περισσότερα από 2 OS."
-            s2 = "Έχετε περισσότερα από 2 Λειτουργικά συστήματα / kernel εγκατεστημένα \
-στο partition {0}. Δείτε πώς να αφαιρέσετε τα επιπλέον kernel.".format(mt2)
+            s2 = 'Έχετε περισσότερες από 2 εκδόσεις kernel εγκατεστημένα \
+στο ίδιο partition {0}.\n\
+<a href="http://wiki.ubuntu-gr.org/MoreThan2Kernels">Διαβάστε \
+εδώ</a> για περισσότερες πληροφορίες και πώς να αφαιρέσετε τα επιπλέον kernel.'.format(mt2)
             self.messagedialog(s, s2)
 
     def iswubi(self):
@@ -593,7 +595,10 @@ class siggui:
             m = __import__("mechanize")
         except ImportError:
             errormsg1 = "<b>ΣΦΑΛΜΑ</b>: Δεν έχετε εγκατεστημένο το python-mechanize."
-            errormsg2 = 'Για να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize. Αλλιώς ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
+            errormsg2 = 'Για να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε \
+το πακέτο/πρόγραμμα python-mechanize. Αλλιώς ακολουθήστε \
+<a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό \
+το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
             self.messagedialog(errormsg1, errormsg2)
             return (1, errormsg1)
         br = m.Browser()
@@ -633,7 +638,10 @@ class siggui:
             errormsg = m.group(1)
             if re.search("Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης", errormsg):
                 errormsg1 = 'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης.'
-                errormsg2 = 'Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης. Για να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
+                errormsg2 = 'Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας \
+τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης. Για να συνεχίσετε \
+να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα \
+του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
                 self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg1), errormsg2)
             else:
                 self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg), "")
@@ -652,7 +660,9 @@ class siggui:
             errormsg = m.group(1)
             if re.search("Η υποβληθείσα μορφή ήταν άκυρη", errormsg):
                 errormsg1 = 'Η υποβληθείσα μορφή ήταν άκυρη'
-                errormsg2 = 'Προσπαθήστε πάλι. Σε περίπτωση που επαναληφθεί, ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
+                errormsg2 = 'Προσπαθήστε πάλι. Σε περίπτωση που επαναληφθεί, ακολουθήστε \
+<a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό \
+το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
                 self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg1), errormsg2)
             else:
                 self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg), "")
