@@ -497,11 +497,11 @@ class siggui:
         # Check if more than two OS present in system.
         if self.more_than_two:
             mt2 = ' '.join(self.more_than_two)
-            s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Περισσότερα από 2 OS."
-            s2 = 'Έχετε περισσότερες από 2 εκδόσεις kernel εγκατεστημένα \
-στο ίδιο partition {0}.\n\
+            s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Περισσότερα από 2 Λειτουργικά Συστήματα"
+            s2 = 'Έχετε περισσότερες από 2 εκδόσεις πυρήνα(kernel) εγκατεστημένες \
+στην ίδια κατάτμηση: {0}\n\
 <a href="http://wiki.ubuntu-gr.org/MoreThan2Kernels">Διαβάστε \
-εδώ</a> για περισσότερες πληροφορίες και πώς να αφαιρέσετε τα επιπλέον kernel.'.format(mt2)
+εδώ</a> για περισσότερες πληροφορίες και για οδηγίες αφαίρεσης των επιπλέον πυρήνων.'.format(mt2)
             self.messagedialog(s, s2)
 
     def iswubi(self):
@@ -565,7 +565,7 @@ class siggui:
             # Submit to forum
             dialogreply = self.dialog.run()
             if dialogreply == gtk.RESPONSE_APPLY:
-                self.statusmsg("Contacting forum...")
+                self.statusmsg("Επικοινωνία...")
                 timeid = glib.timeout_add_seconds(1, self.webwrapper)
             self.dialog.hide()
 
@@ -684,7 +684,7 @@ class siggui:
 
         r4 = br.follow_link(url_regex='ucp\.php.*mode=logout')
 
-        self.statusmsg("Submitted to forum!")
+        self.statusmsg("Υποβλήθηκε στο φόρουμ!")
         return (0,oldsig)
 
 class osgrubber:
