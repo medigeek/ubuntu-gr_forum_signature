@@ -42,15 +42,28 @@ import subprocess
 import time
 import glob
 import logging
-import argparse
 
-# PARSE ARGUMENTS
-parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('-d', '--debug', action='store_true',
+try:
+    import argparse1
+    # PARSE ARGUMENTS
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-d', '--debug', action='store_true',
     help='Debug (print out useful debug data)')
-parser.add_argument('-t', '--text-only', action='store_true',
+    parser.add_argument('-t', '--text-only', action='store_true',
     help='Print to console/terminal only')
-args = parser.parse_args()
+    args = parser.parse_args()
+    print(args)
+except ImportError:
+    # < python2.7
+    import optparse
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option('-d', '--debug', action='store_true',
+        default=False, help='Debug (print out useful debug data)')
+    parser.add_option('-t', '--text-only',
+        action='store_false', default=False,
+        help='Print to console/terminal only')
+    (args, args2) = parser.parse_args()
 
 # LOGS
 log = logging.getLogger("forum-signature")
