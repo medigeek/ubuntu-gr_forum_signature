@@ -44,7 +44,7 @@ import glob
 import logging
 
 try:
-    import argparse1
+    import argparse
     # PARSE ARGUMENTS
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('-d', '--debug', action='store_true',
@@ -498,7 +498,7 @@ class siggui:
         if self.more_than_two:
             mt2 = ' '.join(self.more_than_two)
             s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Περισσότερα από 2 Λειτουργικά Συστήματα"
-            s2 = 'Έχετε περισσότερες από 2 εκδόσεις πυρήνα(kernel) εγκατεστημένες \
+            s2 = 'Έχετε περισσότερες από 2 εκδόσεις πυρήνα (kernel) εγκατεστημένες \
 στην ίδια κατάτμηση: {0}\n\
 <a href="http://wiki.ubuntu-gr.org/MoreThan2Kernels">Διαβάστε \
 εδώ</a> για περισσότερες πληροφορίες και για οδηγίες αφαίρεσης των επιπλέον πυρήνων.'.format(mt2)
@@ -741,7 +741,9 @@ class osgrubber:
 
     def truncate_titles(self, t):
         """ Trucate title of OS in read_grub() """
-        s = re.sub(', .* Linux|\(.*\)$', '', t).rstrip()
+        s = re.sub(',? [^\s]*? Linux', '', t).rstrip()
+        s = re.sub('\([^\)]*?\)$|\(loader\)', '', s)
+        s = re.sub('\s+', ' ', s)
         self.log.debug("Trimmed OS title: {0}".format(s))
         return s
 
@@ -768,7 +770,7 @@ class osgrubber:
         #Create empty dict with grub menuentry-ies
         dct = dict()
         li = list()
-        regexstr = "menuentry ['\"](?P<title>.*?)['\"].*?set root='\((?P<device>.*?)\)'(?:.*?(?:(?:linux16|linux)\s(?P<linuxstr>.*?)\n)|.*?)"
+        regexstr = "menuentry ['\"](?P<title>.*?)['\"].*?set root='\((?P<device>.*?)\)'(?:.*?(?:chainloader.*?\n|(?:linux16|linux)\s(?P<linuxstr>.*?)\n)|.*?)"
         for m in re.finditer(regexstr, grub2_cont, re.S):
             self.log.debug("Matched grub line: {0}".format(m.groups()))
             l = m.group('linuxstr')
