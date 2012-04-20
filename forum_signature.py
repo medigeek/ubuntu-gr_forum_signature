@@ -741,9 +741,9 @@ class osgrubber:
 
     def truncate_titles(self, t):
         """ Trucate title of OS in read_grub() """
-        s = re.sub(',? [^\s]*? Linux', '', t).rstrip()
+        s = re.sub(',? [^\s]*? Linux', '', t)
         s = re.sub('\([^\)]*?\)$|\(loader\)', '', s)
-        s = re.sub('\s+', ' ', s)
+        s = re.sub('\s+', ' ', s).rstrip()
         self.log.debug("Trimmed OS title: {0}".format(s))
         return s
 
