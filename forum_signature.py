@@ -399,7 +399,7 @@ class siggui:
         self.unknown = "�"
         self.username = ""
         self.password = ""
-        self.sig_charlimit = 500 # Allowed number of characters
+        self.sig_charlimit = 600 # Allowed number of characters
         # UI FILE
         self.uifile = "forum_signature.glade"
         self.builder = gtk.Builder()
