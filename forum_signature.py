@@ -20,7 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """ Example of signature:
-1 Linux: � ┃ Προγραμματισμός: � ┃ Αγγλικά: �
+1 Γνώσεις Linux: � ┃ Προγραμματισμού: � ┃ Αγγλικών: �
 2 Ubuntu 11.04 natty 64bit (en_GB.utf8), Ubuntu 2.6.38-10-generic, Windows 7
 3 Intel Core2 Duo CPU E6550 2.33GHz ‖ RAM 3961 MiB ‖ MSI MS-7235
 4 nVidia G73 [GeForce 7300 GT] [10de:0393] (rev a1)
@@ -174,7 +174,7 @@ class core:
                 "programming": self.unknown,
                 "english": self.unknown
             }
-        return "1 Linux: {0} ┃ Προγραμματισμός: {1} ┃ Αγγλικά: {2}".format(
+        return "1 Γνώσεις Linux: {0} ┃ Προγραμματισμού: {1} ┃ Αγγλικών: {2}".format(
                 s["linux"], s["programming"], s["english"])
 
     def osinfo(self):
@@ -531,12 +531,12 @@ class siggui:
         linux = self.comboboxlinux.get_active_text()
         programming = self.comboboxprogramming.get_active_text()
         english = self.comboboxenglish.get_active_text()
-        self.line = "Linux: {0} ┃ Προγραμματισμός: {1} ┃ Αγγλικά: {2}".format(
+        self.line = "Γνώσεις Linux: {0} ┃ Προγραμματισμού: {1} ┃ Αγγλικών: {2}".format(
             linux, programming, english)
         (start, end) = self.textboxbuf.get_bounds()
         oldtext = self.textboxbuf.get_text(start, end) # get all text
         newtext = re.subn(
-            'Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
+            'Γνώσεις Linux:.*┃ Προγραμματισμού:.*┃ Αγγλικών:.*',
             self.line,
             oldtext
         ) # newtext is a touple ("newstring", times_of_substitution)
