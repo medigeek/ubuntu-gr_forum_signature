@@ -128,6 +128,7 @@ class core:
             "Phoenix Technologies": "Phoenix",
             "InnoTek": "Innotek",
             "Realtek Semiconductor Co., Ltd.": "Realtek",
+            "Realtek Semiconductor Corp.": "Realtek",
             "nVidia Corporation": "nVidia",
             "ASUS INC.": "ASUS",
             "Ralink corp.": "Ralink",
