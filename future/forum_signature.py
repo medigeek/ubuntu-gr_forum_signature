@@ -20,8 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """ Example of signature:
-1 Linux: � ┃ Προγραμματισμός: � ┃ Αγγλικά: �
-2 Ubuntu 11.04 natty 64bit (en_GB.utf8), Windows 7
+1 Γνώσεις Linux: � ┃ Προγραμματισμού: � ┃ Αγγλικών: �
+2 Ubuntu 11.04 natty 64bit (en_GB.utf8), Ubuntu 2.6.38-10-generic, Windows 7
 3 Intel Core2 Duo CPU E6550 2.33GHz ‖ RAM 3961 MiB ‖ MSI MS-7235
 4 nVidia G73 [GeForce 7300 GT] [10de:0393] (rev a1)
 5 eth0: Realtek RTL-8110SC/8169SC Gigabit Ethernet [10ec:8167] (rev 10) ⋮ eth1: Realtek RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
@@ -41,31 +41,67 @@ import re
 import subprocess
 import time
 import glob
+import logging
 
-textonly = False
 try:
-    #import pygtk
-    #pygtk.require('2.0')
-    #import gtk
-    from gi.repository import Gtk, Gdk
-
+    import argparse
+    # PARSE ARGUMENTS
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-d', '--debug', action='store_true',
+    help='Debug (print out useful debug data)')
+    parser.add_argument('-t', '--text-only', action='store_true',
+    help='Print to console/terminal only')
+    args = parser.parse_args()
+    print(args)
 except ImportError:
-    sys.stderr.write("ERROR: Could not load gtk module\n")
-    sys.stderr.flush()
-    textonly = True
+    # < python2.7
+    import optparse
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option('-d', '--debug', action='store_true',
+        default=False, help='Debug (print out useful debug data)')
+    parser.add_option('-t', '--text-only',
+        action='store_true', default=False,
+        help='Print to console/terminal only')
+    (args, args2) = parser.parse_args()
+
+# LOGS
+log = logging.getLogger("forum-signature")
+logfile = "forum-signature.log"
+if os.path.isfile(logfile):
+    os.remove(logfile)
+formatter = logging.Formatter('%(levelname)s: %(message)s')
+filehandler = logging.FileHandler(logfile)
+filehandler.setFormatter(formatter)
+streamhandler = logging.StreamHandler(sys.stdout)
+streamhandler.setFormatter(formatter)
+log.addHandler(filehandler)
+log.addHandler(streamhandler)
+if args.debug:
+    log.setLevel(logging.DEBUG)
+else:
+    log.setLevel(logging.INFO)
+log.debug("parsing arguments: {0}".format(args))
+log.debug("osgrubber().returnall()")
+
+try:
+    from gi.repository import Gtk, Gdk
+except ImportError:
+    log.error("Could not load gtk module. Setting text-only output.\n")
+    args.text_only = True
 try:
     try:
         import gobject as glib
     except ImportError:
         import glib
 except ImportError:
-    sys.stderr.write("ERROR: Could not load glib/gobject module\n")
-    sys.stderr.flush()
-    textonly = True
+    log.error("Could not load glib/gobject module. Setting text-only output.\n")
+    args.text_only = True
 
 class core:
-    def __init__(self, osgrubber):
+    def __init__(self, osgrubber, logger):
         self.osgrubbertuple = osgrubber
+        self.log = logger
         self.pyversion = platform.python_version()
         self.unknown = "�" # Character/string for unknown data
         # Dictionary for dicreplace(), executed at returnall()
@@ -78,7 +114,9 @@ class core:
             "Silicon Integrated Systems [SiS]": "SiS",
             "Atheros Communications, Inc.": "Atheros",
             "Atheros Communications": "Atheros",
+            "Atheros Inc.": "Atheros",
             "Acer, Inc.": "Acer",
+            "ASUSTek Computer, Inc.": "ASUSTek",
             "Atheros Inc.": "Atheros",
             "ATI Technologies Inc": "ATI",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
@@ -90,9 +128,16 @@ class core:
             "Phoenix Technologies": "Phoenix",
             "InnoTek": "Innotek",
             "Realtek Semiconductor Co., Ltd.": "Realtek",
+            "Realtek Semiconductor Corp.": "Realtek",
             "nVidia Corporation": "nVidia",
             "ASUS INC.": "ASUS",
             "Ralink corp.": "Ralink",
+            "Huawei Technologies Co., Ltd.": "Huawei",
+            "NetGear, Inc.": "NetGear",
+            "NVIDIA Corporation": "nVidia",
+            "Accton Technology Corp.": "Accton",
+            "Advanced Micro Devices [AMD] nee ATI": "AMD/ATI",
+            "Advanced Micro Devices [AMD]": "AMD",
             "(R)": "",
             "(TM)": "",
             "(r)": "",
@@ -127,7 +172,7 @@ class core:
         x = self.knowledge()
         y = self.osinfo()
         z = self.specs()
-        text = "%s\n%s\n%s" % (x, y, z)
+        text = "{0}\n{1}\n{2}".format(x, y, z)
         t = self.dicreplace(text)
         return t
 
@@ -136,12 +181,13 @@ class core:
                 "programming": self.unknown,
                 "english": self.unknown
             }
-        return "1 Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
-                (s["linux"], s["programming"], s["english"])
+        return "1 Γνώσεις Linux: {0} ┃ Προγραμματισμού: {1} ┃ Αγγλικών: {2}".format(
+                s["linux"], s["programming"], s["english"])
 
     def osinfo(self):
-        """ Calls osgrubber() class.
-            Input: tuple list (osinfo, arch_type, iswubi, lang, self.oslist)
+        """ Returns OS info line (#2).
+            Input: tuple list
+            (osinfo, arch_type, iswubi, lang, self.oslist, self.osdict)
         """
         t = self.osgrubbertuple
         # is it wubi installation?
@@ -153,14 +199,14 @@ class core:
         currosstr = ' '.join(curroslist).rstrip()
         lang = t[3]
         restofos = ', '.join(t[4])
-        s = "2 %s (%s), %s" % (currosstr, lang, restofos)
+        s = "2 {0} ({1}), {2}".format(currosstr, lang, restofos)
         #print(s)
         return s
 
     def specs(self):
         core = self.shortencoreid()
-        text = '3 %s ‖ RAM %s MiB ‖ %s\n4 %s\n5 %s' % \
-            (self.info["cpu"],
+        text = '3 {0} ‖ RAM {1} MiB ‖ {2}\n4 {3}\n5 {4}'.format(
+            self.info["cpu"],
             self.info["memory"],
             core,
             self.info["display"],
@@ -183,7 +229,7 @@ class core:
     def shortencoreid(self):
         # Shorten the machine/motherboard id and manufacturer
         u = self.unknown # "�"
-        u2 = "%s %s" % (u, u) # "� �"
+        u2 = "{0} {0}".format(u) # "� �"
         c = self.info["core"]
         if c[0] == c[1]:
             s = c[0]
@@ -231,8 +277,8 @@ class core:
             return t
         # Return an array of two strings
         t = [
-            "%s %s" % (self.coreid["board_vendor"], self.coreid["board_name"]),
-            "%s %s" % (self.coreid["sys_vendor"], self.coreid["product_name"])
+            "{0} {1}".format(self.coreid["board_vendor"], self.coreid["board_name"]),
+            "{0} {1}".format(self.coreid["sys_vendor"], self.coreid["product_name"])
         ]
         return t
 
@@ -286,14 +332,14 @@ class core:
             append = netcards.append # PythonSpeed/PerformanceTips
             if pciids:
                 #04:01.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
-                mp = ":\s(.*%s:%s.*)" % (pciids[0][0], pciids[0][1])
+                mp = ":\s(.*{0}:{1}.*)".format(pciids[0][0], pciids[0][1])
                 pcidesc = re.findall(mp, self.lspci, re.M+re.I)
-                append("%s: %s" % (name, pcidesc[0]))
+                append("{0}: {1}".format(name, pcidesc[0]))
             if usbids:
                 #Bus 002 Device 004: ID 0cf3:1002 Atheros Communications, Inc. TP-Link TL-WN821N v2 [Atheros AR9001U-(2)NG]
-                mu = ":\sID\s(%s:%s.*)" % (usbids[0][0], usbids[0][1])
+                mu = ":\sID\s({0}:{1}.*)".format(usbids[0][0], usbids[0][1])
                 usbdesc = re.findall(mu, self.lsusb, re.M+re.I)
-                append("%s: %s" % (name, usbdesc[0]))
+                append("{0}: {1}".format(name, usbdesc[0]))
         network = ' ⋮ '.join(netcards)
         return network
 
@@ -351,15 +397,18 @@ class core:
 
 class siggui:
     """ The graphical user interface for timekpr configuration. """
-    def __init__(self, text, iswubi, debug=False):
+    def __init__(self, text, osgrubber, logger, debug=False):
         self.debug = debug
-        self.is_wubi = iswubi
+        #osgrubber: (osinfo, arch_type, iswubi, lang, self.oslist, self.osdict, self.morethan2)
+        self.is_wubi = osgrubber[2]
+        self.more_than_two = osgrubber[6]
+        self.log = logger
         self.unknown = "�"
         self.username = ""
         self.password = ""
-        self.sig_charlimit = 500 # Allowed number of characters
+        self.sig_charlimit = 600 # Allowed number of characters
         # UI FILE
-        self.uifile = "forum_signature_gtk3.glade"
+        self.uifile = "forum_signature.glade"
         self.builder = Gtk.Builder()
         self.builder.add_from_file(self.uifile)
         #SIGNALS
@@ -373,6 +422,7 @@ class siggui:
         self.textboxbuf.set_text(text)
         self.textbox2 = self.builder.get_object("textview2") # old sig
         self.textboxbuf2 = self.textbox2.get_buffer()
+        
         self.liststore = self.builder.get_object("liststorecombo1")
         self.comboboxlinux = self.builder.get_object("comboboxtext1")
         self.comboboxlinux.set_model(self.liststore)
@@ -380,6 +430,7 @@ class siggui:
         self.comboboxprogramming.set_model(self.liststore)
         self.comboboxenglish = self.builder.get_object("comboboxtext3")
         self.comboboxenglish.set_model(self.liststore)
+        
         self.statusbar = self.builder.get_object("statusbar1")
         self.statusbarcid = self.statusbar.get_context_id("status")
         self.oldsigpack = self.builder.get_object("expander1")
@@ -399,6 +450,8 @@ class siggui:
         self.comboboxenglish.set_entry_text_column(0)
         # CHECK WUBI
         self.iswubi()
+        # CHECK if has more than 2 OS on same device partition
+        self.hasmorethan2()
 
     def on_textboxbuf_changed(self, widget):
         (start, end) = self.textboxbuf.get_bounds()
@@ -406,10 +459,11 @@ class siggui:
         self.sig_size = len(sigtext)
         # Could use this to drop code tags: re.sub(r'\[([^\s]*).*?\](.*?)\[/\1\]', r'\2', text)
         if self.sig_size > self.sig_charlimit:
-            l = "Υπογραφή: Χαρακτήρες: <span foreground='red'>%s</span> (Επιτρέπονται μέχρι %s χαρακτήρες)"
+            l = "Υπογραφή: Χαρακτήρες: <span foreground='red'>{0}</span> \
+(Επιτρέπονται μέχρι {1} χαρακτήρες)"
         else:
-            l = "Υπογραφή: Χαρακτήρες: %s (Επιτρέπονται μέχρι %s χαρακτήρες)"
-        self.textbox_label.set_markup(l % (self.sig_size, self.sig_charlimit))
+            l = "Υπογραφή: Χαρακτήρες: {0} (Επιτρέπονται μέχρι {1} χαρακτήρες)"
+        self.textbox_label.set_markup(l.format(self.sig_size, self.sig_charlimit))
 
     def on_button7_clicked(self, widget):
         self.reportbug()
@@ -452,15 +506,30 @@ class siggui:
         #print("%s %s" % (type(dialogreply), dialogreply))
         self.reportbugdialog.hide()
 
+    def hasmorethan2(self):
+        # Check if more than two OS present in system.
+        if self.more_than_two:
+            mt2 = ' '.join(self.more_than_two)
+            s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Περισσότερα από 2 Λειτουργικά Συστήματα"
+            s2 = 'Έχετε περισσότερες από 2 εκδόσεις πυρήνα (kernel) εγκατεστημένες \
+στην ίδια κατάτμηση: {0}\n\
+<a href="http://wiki.ubuntu-gr.org/MoreThan2Kernels">Διαβάστε \
+εδώ</a> για περισσότερες πληροφορίες και για οδηγίες αφαίρεσης των επιπλέον πυρήνων.'.format(mt2)
+            self.messagedialog(s, s2)
+
     def iswubi(self):
         # Check if its wubi
-        if self.is_wubi == True:
+        if self.is_wubi:
             s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Δε συστήνεται η εγκατάσταση μέσω wubi."
-            s2 = "Η εγκατάσταση που έχετε έγινε μέσω <span foreground='red'>wubi</span>. Τετοια εγκατάσταση συστήνεται μόνο για δοκιμαστικούς σκοπούς (<a href='http://wiki.ubuntu-gr.org/whynotwubi'>διαβάστε τους λόγους</a>).\nΔιαβάστε στους <a href='http://forum.ubuntu-gr.org/viewtopic.php?f=9&amp;t=859'>οδηγούς/how to/tutorials</a> πώς να κάνετε σωστή εγκατάσταση."
+            s2 = "Η εγκατάσταση που έχετε έγινε μέσω <span foreground='red'>wubi</span>. \
+Τετοια εγκατάσταση συστήνεται μόνο για δοκιμαστικούς σκοπούς \
+(<a href='http://wiki.ubuntu-gr.org/whynotwubi'>διαβάστε τους λόγους</a>).\n\
+Διαβάστε στους <a href='http://forum.ubuntu-gr.org/viewtopic.php?f=9&amp;t=859'>\
+οδηγούς/how to/tutorials</a> πώς να κάνετε σωστή εγκατάσταση."
             self.messagedialog(s, s2)
 
     def statusmsg(self, message):
-        msg = "%s %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), message)
+        msg = "{0} {1}".format(time.strftime("%Y-%m-%d %H:%M:%S"), message)
         msgid = self.statusbar.push(self.statusbarcid, msg)
         #self.statusrefresh()
         timeoutid2 = glib.timeout_add_seconds(4, self.statusrefresh, msgid)
@@ -475,12 +544,12 @@ class siggui:
         linux = self.comboboxlinux.get_active_text()
         programming = self.comboboxprogramming.get_active_text()
         english = self.comboboxenglish.get_active_text()
-        self.line = "Linux: %s ┃ Προγραμματισμός: %s ┃ Αγγλικά: %s" % \
-            (linux, programming, english)
+        self.line = "Γνώσεις Linux: {0} ┃ Προγραμματισμού: {1} ┃ Αγγλικών: {2}".format(
+            linux, programming, english)
         (start, end) = self.textboxbuf.get_bounds()
         oldtext = self.textboxbuf.get_text(start, end, include_hidden_chars=False) # get all text
         newtext = re.subn(
-            'Linux:.*┃ Προγραμματισμός:.*┃ Αγγλικά:.*',
+            'Γνώσεις Linux:.*┃ Προγραμματισμού:.*┃ Αγγλικών:.*',
             self.line,
             oldtext
         ) # newtext is a touple ("newstring", times_of_substitution)
@@ -490,24 +559,27 @@ class siggui:
             if oldtext == "":
                 self.textboxbuf.set_text(self.line)
             else:
-                self.textboxbuf.set_text("%s\n%s" % (oldtext, self.line))
+                self.textboxbuf.set_text("{0}\n{1}".format(oldtext, self.line))
+
+    def checksigsize(self):
+        if self.sig_size > self.sig_charlimit:
+            errormsg1 = 'Ξεπεράσατε το επιτρεπόμενο όριο χαρακτήρων!'
+            errormsg2 = 'Επιτρέπονται μέχρι 500 χαρακτήρες. Αλλάξτε την \
+υπογραφή σας. Αν θέλετε να χρησιμοποιήσετε code tags, ακολουθήστε \
+<a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό \
+το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
+            self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg1), errormsg2)
+            return True
+        return False
 
     def on_button1_clicked(self, widget):
         # Check size
-        if self.sig_size > self.sig_charlimit:
-            errormsg1 = 'Ξεπεράσατε το επιτρεπόμενο όριο χαρακτήρων!'
-            errormsg2 = 'Επιτρέπονται μέχρι 500 χαρακτήρες. Αλλάξτε την υπογραφή σας. Αν θέλετε να χρησιμοποιήσετε code tags, ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
-            self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg1, errormsg2)
-        else:
+        if not self.checksigsize():
             # Submit to forum
             dialogreply = self.dialog.run()
             if dialogreply == Gtk.ResponseType.APPLY:
-                #print("REPLY: %s (continue)" % dialogreply)
-                #print("User: %s Pass: %s" % (self.username, self.password))
-                self.statusmsg("Contacting forum...")
+                self.statusmsg("Επικοινωνία...")
                 timeid = glib.timeout_add_seconds(1, self.webwrapper)
-            #elif dialogreply == Gtk.ResponseType.CANCEL or dialogreply == Gtk.ResponseType.DELETE_EVENT:
-                #print("REPLY: %s (cancel)" % dialogreply)
             self.dialog.hide()
 
     def webwrapper(self):
@@ -549,13 +621,16 @@ class siggui:
             m = __import__("mechanize")
         except ImportError:
             errormsg1 = "<b>ΣΦΑΛΜΑ</b>: Δεν έχετε εγκατεστημένο το python-mechanize."
-            errormsg2 = 'Για να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε το πακέτο/πρόγραμμα python-mechanize. Αλλιώς ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
+            errormsg2 = 'Για να αποσταλεί η υπογραφή σας πρέπει να εγκαταστήσετε \
+το πακέτο/πρόγραμμα python-mechanize. Αλλιώς ακολουθήστε \
+<a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό \
+το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
             self.messagedialog(errormsg1, errormsg2)
             return (1, errormsg1)
         br = m.Browser()
         #('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'),
         br.addheaders = [
-            ('Accept-Charset', 'UTF-8;q=0.7'),
+            ('Accept-Charset', 'ISO-8859-1,utf-8;q=0.7,*;q=0.7'),
             ('Accept-Language', 'Accept-Language: en-us,en;q=0.7,el;q=0.3'),
             ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
         ]
@@ -568,7 +643,6 @@ class siggui:
 
         # Debug!
         if self.debug:
-            import logging
             br.set_debug_http(True)
             br.set_debug_redirects(True)
             br.set_debug_responses(True)
@@ -577,7 +651,7 @@ class siggui:
             logger.addHandler(logging.FileHandler("http.log"))
             logger.setLevel(logging.DEBUG)
 
-        br.open("https://forum.ubuntu-gr.org/ucp.php?i=profile&mode=signature")
+        br.open("http://forum.ubuntu-gr.org/ucp.php?i=profile&mode=signature")
         #self.statusmsg("Logging in...")
         br.select_form(nr=1) # Select login form (no name for the form)
         br["username"] = self.username
@@ -590,53 +664,51 @@ class siggui:
             errormsg = m.group(1)
             if re.search("Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης", errormsg):
                 errormsg1 = 'Έχετε υπερβεί το μέγιστο αριθμό προσπαθειών σύνδεσης.'
-                errormsg2 = 'Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης. Για να συνεχίσετε να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
-                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg1, errormsg2)
+                errormsg2 = 'Εκτός από το όνομα μέλους και τον κωδικό πρόσβασης σας \
+τώρα επίσης πρέπει να εισαγάγετε και τον κώδικα επιβεβαίωσης. Για να συνεχίσετε \
+να χρησιμοποιείτε το πρόγραμμα, πρέπει να κάνετε login/σύνδεση στην ιστοσελίδα \
+του φόρουμ, <a href="http://forum.ubuntu-gr.org">http://forum.ubuntu-gr.org</a>'
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg1), errormsg2)
             else:
-                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg, "")
-            self.statusmsg("Σφάλμα: %s" % errormsg)
-            return (1,"Σφάλμα: %s" % errormsg)
-            #print("Error: %s" % errormsg)
-        #print(h1)
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg), "")
+            self.statusmsg("Σφάλμα: {0}".format(errormsg))
+            return (1,"Σφάλμα: {0}".format(errormsg))
 
         r2 = br.follow_link(url_regex='.*profile.*mode=signature.*sid')
-        #h2 = r2.read()
-        #print(h2)
-
         br.select_form(nr=1)
         oldsig = br["signature"]
         br["signature"] = text
-        print(br.form)
 
         r3 = br.submit(name='submit')
         h3 = r3.read()
-        #print(h3)
-
         m = re.search('<p class="error">(.*)</p>', h3)
         if m:
             errormsg = m.group(1)
             if re.search("Η υποβληθείσα μορφή ήταν άκυρη", errormsg):
                 errormsg1 = 'Η υποβληθείσα μορφή ήταν άκυρη'
-                errormsg2 = 'Προσπαθήστε πάλι. Σε περίπτωση που επαναληφθεί, ακολουθήστε <a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
-                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg1, errormsg2)
+                errormsg2 = 'Προσπαθήστε πάλι. Σε περίπτωση που επαναληφθεί, ακολουθήστε \
+<a href="http://forum.ubuntu-gr.org/ucp.php?i=profile&amp;mode=signature">αυτό \
+το σύνδεσμο</a> και υποβάλετε την υπογραφή μέσω της ιστοσελίδας.'
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg1), errormsg2)
             else:
-                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: %s" % errormsg, "")
-            self.statusmsg("Σφάλμα: %s" % errormsg)
-            return (1,"Σφάλμα: %s" % errormsg)
+                self.messagedialog("<b>ΣΦΑΛΜΑ</b>: {0}".format(errormsg), "")
+            self.statusmsg("Σφάλμα: {0}".format(errormsg))
+            return (1,"Σφάλμα: {0}".format(errormsg))
 
         r4 = br.follow_link(url_regex='ucp\.php.*mode=logout')
-        #h4 = r4.read()
-        #print(h4)
 
-        self.statusmsg("Submitted to forum!")
+        self.statusmsg("Υποβλήθηκε στο φόρουμ!")
         return (0,oldsig)
 
 class osgrubber:
     """ Retrieves information about installed operating systems. """
-    def __init__(self):
+    def __init__(self, logger):
         self.oslist = list()
+        self.osdict = dict()
+        self.log = logger
         self.result = ""
-        result = self.read_grub() # Sets self.oslist array
+        self.morethan2 = set() #python2.6 or: from sets import Set as set
+        self.read_grub() # Sets self.oslist array
         self.finalize()
 
     def printall(self):
@@ -645,6 +717,105 @@ class osgrubber:
 
     def returnall(self):
         return self.result
+
+    def finalize(self):
+        """ Finalizes the processing.
+            Returns a tuple list:
+            (osinfo, arch_type, iswubi, lang, self.oslist, self.osdict, self.morethan2)
+        """
+        iswubi = self.is_wubi()
+        if self.is_wubi():
+            wubi = "wubi"
+        else:
+            wubi = ""
+
+        arch_type = self.machinearch()
+        osinfo = self.osinfo()
+        lang = self.oslang()
+        self.result = (osinfo, arch_type, iswubi, lang, self.oslist, self.osdict, self.morethan2)
+
+    def osinfo(self):
+        # ('Ubuntu', '10.10', 'maverick')
+        try:
+            d = platform.linux_distribution()
+        except AttributeError:
+            d = platform.dist() # For python versions < 2.6
+        distrib = ' '.join(d)
+        return distrib
+
+    def oslang(self):
+        lang = os.getenv("LANG", "en_US") # Assume en_US if LANG var not set
+        return lang
+
+    def machinearch(self):
+        m = platform.architecture()
+        #('64bit', 'ELF')
+        return m[0]
+
+    def truncate_titles(self, t):
+        """ Trucate title of OS in read_grub() """
+        s = re.sub(',? [^\s]*? Linux', '', t)
+        s = re.sub('\([^\)]*?\)$|\(loader\)', '', s)
+        s = re.sub('\s+', ' ', s).rstrip()
+        self.log.debug("Trimmed OS title: {0}".format(s))
+        return s
+
+    def read_grub(self):
+        """ Retrieves operating systems from grub configuration file.
+            Sets self.oslist list (max 2 OS per partition)
+            Sets self.osdict dictionary (all OS, categorised by device)
+            Populates self.morethan2 if more than 2 OS found on same partition
+            Returns True/False
+            
+            self.osdict example:
+            d['hd2,msdos1']
+                [{'linuxstr': None, 'title': 'Windows 7 (on /dev/sdc1)'}]
+            d['hd2,msdos1'][0]['title']
+                'Windows 7 (on /dev/sdc1)'
+        """
+        #Does grub.cfg exist?
+        grub2_fname = "/boot/grub/grub.cfg"
+        if not os.path.isfile(grub2_fname):
+            return False
+        with open(grub2_fname) as f:
+            grub2_cont = f.read()
+        
+        #Create empty dict with grub menuentry-ies
+        dct = dict()
+        li = list()
+        regexstr = "menuentry ['\"](?P<title>.*?)['\"].*?set root='\((?P<device>.*?)\)'(?:.*?(?:chainloader.*?\n|(?:linux16|linux)\s(?P<linuxstr>.*?)\n)|.*?)"
+        for m in re.finditer(regexstr, grub2_cont, re.S):
+            self.log.debug("Matched grub line: {0}".format(m.groups()))
+            l = m.group('linuxstr')
+            if not l == None and ("recovery" in l or "memtest" in l):
+                #Ignore memtest and recovery grub menuentry-ies
+                self.log.debug("Skipping this line")
+                continue
+            t = m.group('title')
+            d = m.group('device')
+            
+            # Truncate titles
+            t = self.truncate_titles(t)
+            
+            if not dct.has_key(d):
+                dct[m.group('device')] = list()
+            # Keep all the OS in the dictionary
+            dct[m.group('device')].append({'title': t,'linuxstr': l})
+            # Do not save current OS in the list
+            # Do not save more than two OS of the same partition in the list
+            self.log.debug("Checks (not current OS & not more than 2 OS)")
+            if not self.is_currentos(t) and len(dct[d]) < 3:
+                li.append(t)
+            elif not len(dct[d]) < 3:
+                self.log.debug("More than 2 OS found on device: {0}".format(d))
+                self.morethan2.add(d)
+        
+        self.oslist = li
+        self.osdict = dct
+        if self.morethan2:
+            mt2 = ' '.join(self.morethan2)
+            self.log.warning("More than 2 OS found on device(s): {0}".format(mt2))
+        return True
 
     def is_currentos(self, osline):
         """ Detect current os (based on linux version) in self.oslist
@@ -660,79 +831,6 @@ class osgrubber:
             return True
         return False
 
-    def finalize(self):
-        """ Finalizes the processing.
-            Returns a tuple list: (osinfo, arch_type, iswubi, lang, self.oslist)
-        """
-        iswubi = self.is_wubi()
-        if self.is_wubi():
-            wubi = "wubi"
-        else:
-            wubi = ""
-
-        arch_type = self.machinearch()
-        osinfo = self.osinfo()
-        lang = self.oslang()
-
-        #('Ubuntu 11.04 natty', '64bit', True, 'en_GB.utf8', ('Ubuntu 2.6.35-28-generic', 'Windows 7'))
-        self.result = (osinfo, arch_type, iswubi, lang, self.oslist)
-
-    def osinfo(self):
-        # ('Ubuntu', '10.10', 'maverick')
-        try:
-            d = platform.linux_distribution()
-        except AttributeError:
-            d = platform.dist() # For python versions < 2.6
-        distrib = ' '.join(d)
-        return distrib
-
-    def oslang(self):
-        lang = os.getenv("LANG", "en_US") # Assume en_US if LANG var not set
-        return lang  
-
-    def machinearch(self):
-        m = platform.architecture()
-        #('64bit', 'ELF')
-        return m[0]
-
-    def read_grub(self):
-        """ Retrieves operating systems from grub configuration file.
-            Sets self.oslist array
-            Returns True/False
-        """
-        #Does grub.cfg exist?
-        grubcfg = "/boot/grub/grub.cfg"
-        if not os.path.isfile(grubcfg):
-            return False
-
-        #getfile
-        f = open(grubcfg, "r")
-        a = list(f.readlines())
-        lines = ''.join(a)
-        f.close()
-        #menuentry "Windows 7 (loader) (on /dev/sdc1)"
-        #menuentry 'Ubuntu, with Linux 2.6.35-28-generic'
-        matches = re.findall("^menuentry\s+['\"]([^'\"]*)['\"]", lines, re.M)
-        if not matches:
-            return False
-        
-        append = self.oslist.append # PythonSpeed/PerformanceTips
-        for i in matches:
-            # Drop memtest and recovery modes
-            if not re.search("recovery|memtest|ανάκτηση", i, re.I):
-                if re.search("linux", i, re.I):
-                    #Ubuntu, with Linux 2.6.38-8-generic
-                    osline = re.sub(",\s?(?:with|με)? Linux", "", i, re.I)
-                elif re.search("windows", i, re.I):
-                    #Windows 7 (on /dev/sdc1)
-                    osline = re.search("(Windows(\s+[^\(]+)?)", i, re.I).group(0)
-                    osline = osline.rstrip() # clear spaces on right side
-                else:
-                    osline = i
-                if not self.is_currentos(osline):
-                    append(osline)
-        return True
-
     def is_wubi(self):
         # Detects wubi installation
         # Scans /etc/fstab for loop devices as root "/" and swap
@@ -740,8 +838,8 @@ class osgrubber:
         fstabfile = "/etc/fstab" # /etc/fstab
         if not os.path.isfile(fstabfile):
             return False
-        f = open(fstabfile, "r")
-        a = list(f.readlines())
+        with open(fstabfile, "r") as f:
+            a = list(f.readlines())
         lines = ''.join(a)
         f.close()
         #print(lines)
@@ -759,30 +857,26 @@ class osgrubber:
             if part == "swap" and re.match("loop", opts):
                 swap_looped = True
         if root_looped and swap_looped:
-            sys.stderr.write("WARNING: wubi installation detected.\n")
-            sys.stderr.flush()
+            self.log.warning("wubi installation detected.\n")
             return True
         else:
             return False
 
 def main():
-    global textonly
-    o = osgrubber().returnall()
-    #(osinfo, arch_type, iswubi, lang, self.oslist)
-
-    text = core(o).returnall()
-    debug_app = False
-    if len(sys.argv) > 1:
-        if "--text" in sys.argv:
-            textonly = True
-        elif "--debug" in sys.argv:
-            debug_app = True
-    if textonly:
+    global args, log
+    o = osgrubber(logger=log).returnall()
+    #(osinfo, arch_type, iswubi, lang, self.oslist, self.osdict, self.morethan2)
+    log.debug("core(o).returnall()")
+    text = core(o, logger=log).returnall()
+    if args.text_only:
+        log.debug("Console-only output")
         print(text)
     else:
+        log.debug("Console and gui output")
         print(text)
-        siggui(text, o[2], debug=debug_app)
+        siggui(text, osgrubber=o, logger=log, debug=args.debug)
         Gtk.main()
+    logging.shutdown()
 
 def timeit():
     f = 'core(osgrubber().returnall()).returnall()'
@@ -795,4 +889,3 @@ def timeit():
 if __name__ == "__main__":
     main()
     #timeit()
-
