@@ -29,8 +29,8 @@
 
 import platform
 pyversion = platform.python_version()
-if pyversion < '2.5':
-    exit('ERROR: You need python 2.5 or higher to use this program.')
+if pyversion < '2.7':
+    exit('ERROR: You need python 2.7 or higher to use this program.')
 if platform.system() != "Linux":
     exit('ERROR: This script is built for GNU/Linux platforms (for now)')
 
@@ -43,27 +43,16 @@ import time
 import glob
 import logging
 
-try:
-    import argparse
-    # PARSE ARGUMENTS
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('-d', '--debug', action='store_true',
-    help='Debug (print out useful debug data)')
-    parser.add_argument('-t', '--text-only', action='store_true',
-    help='Print to console/terminal only')
-    args = parser.parse_args()
-    print(args)
-except ImportError:
-    # < python2.7
-    import optparse
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option('-d', '--debug', action='store_true',
-        default=False, help='Debug (print out useful debug data)')
-    parser.add_option('-t', '--text-only',
-        action='store_true', default=False,
-        help='Print to console/terminal only')
-    (args, args2) = parser.parse_args()
+import argparse
+# PARSE ARGUMENTS
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('-d', '--debug', action='store_true',
+help='Debug (print out useful debug data)')
+parser.add_argument('-t', '--text-only', action='store_true',
+help='Print to console/terminal only')
+args = parser.parse_args()
+print(args)
+
 
 # LOGS
 log = logging.getLogger("forum-signature")
@@ -87,15 +76,12 @@ log.debug("osgrubber().returnall()")
 try:
     from gi.repository import Gtk, Gdk
 except ImportError:
-    log.error("Could not load gtk module. Setting text-only output.\n")
+    log.error("Could not load gtk+ 3 module. Setting text-only output.\n")
     args.text_only = True
 try:
-    try:
-        import gobject as glib
-    except ImportError:
-        import glib
+    from gi.repository import GObject
 except ImportError:
-    log.error("Could not load glib/gobject module. Setting text-only output.\n")
+    log.error("Could not load gobject module. Setting text-only output.\n")
     args.text_only = True
 
 class core:
@@ -408,7 +394,7 @@ class siggui:
         self.password = ""
         self.sig_charlimit = 600 # Allowed number of characters
         # UI FILE
-        self.uifile = "forum_signature.glade"
+        self.uifile = "forum_signature_gtk3.glade"
         self.builder = Gtk.Builder()
         self.builder.add_from_file(self.uifile)
         #SIGNALS
@@ -532,7 +518,7 @@ class siggui:
         msg = "{0} {1}".format(time.strftime("%Y-%m-%d %H:%M:%S"), message)
         msgid = self.statusbar.push(self.statusbarcid, msg)
         #self.statusrefresh()
-        timeoutid2 = glib.timeout_add_seconds(4, self.statusrefresh, msgid)
+        timeoutid2 = GObject.timeout_add_seconds(4, self.statusrefresh, msgid)
 
     def statusrefresh(self, msgid):
         self.statusbar.remove(self.statusbarcid, msgid)
@@ -579,7 +565,7 @@ class siggui:
             dialogreply = self.dialog.run()
             if dialogreply == Gtk.ResponseType.APPLY:
                 self.statusmsg("Επικοινωνία...")
-                timeid = glib.timeout_add_seconds(1, self.webwrapper)
+                timeid = GObject.timeout_add_seconds(1, self.webwrapper)
             self.dialog.hide()
 
     def webwrapper(self):
