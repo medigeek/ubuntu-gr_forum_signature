@@ -1,8 +1,8 @@
+#!/usr/bin/python
 import platform
 import subprocess
 
-pyversion = platform.python_version()
-if pyversion < '2.5':
+if platform.python_version() < '2.5':
     exit('ERROR: You need python 2.5 or higher to use this program.')
 if platform.system() != "Linux":
     exit('ERROR: This script is built for GNU/Linux platforms (for now)')
