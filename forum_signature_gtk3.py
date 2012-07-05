@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # File: forum_signature.py
 # Purpose: Proposes a signature with useful hardware/software information to forum newcomers/newbies
-# Requires: python 2.5, python-gtk2, python-mechanize
+# Requires: python 2.7, python-mechanize
 
 # Copyright (c) 2010-2012 Savvas Radevic <vicedar@gmail.com>
 #
@@ -721,12 +721,11 @@ class osgrubber:
         self.result = (osinfo, arch_type, iswubi, lang, self.oslist, self.osdict, self.morethan2)
 
     def osinfo(self):
-        # ('Ubuntu', '10.10', 'maverick')
-        try:
-            d = platform.linux_distribution()
-        except AttributeError:
-            d = platform.dist() # For python versions < 2.6
-        distrib = ' '.join(d)
+        # Returns current OS info string
+        # Return example: 'Ubuntu 12.04 precise 3.4.4-030404-generic'
+        d = platform.linux_distribution()
+        kernelver = platform.uname()[2]
+        distrib = '{0} {1}'.format(' '.join(d), kernelver)
         return distrib
 
     def oslang(self):
@@ -778,6 +777,10 @@ class osgrubber:
                 self.log.debug("Skipping this line")
                 continue
             t = m.group('title')
+            if "Recovery" in t:
+                # Ignore windows recovery
+                self.log.debug("Skipping this line")
+                continue
             d = m.group('device')
             
             # Truncate titles
