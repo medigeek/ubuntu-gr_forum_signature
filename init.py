@@ -11,7 +11,7 @@ gtk3 = True
 try:
     from gi.repository import Gtk, Gdk
 except ImportError:
-    log.error("Could not load gtk3 module. Using old gtk2.\n")
+    print("Could not load gtk3 module. Using old gtk2.\n")
     gtk3 = False
 
 if gtk3:
