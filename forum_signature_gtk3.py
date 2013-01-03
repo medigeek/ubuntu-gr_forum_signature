@@ -102,12 +102,13 @@ class core:
             "Atheros Communications": "Atheros",
             "Atheros Inc.": "Atheros",
             "Acer, Inc.": "Acer",
-            "ASUSTek Computer, Inc.": "ASUSTek",
+            "ASUSTek Computer, Inc.": "ASUS",
+            "ASUSTeK COMPUTER INC.": "ASUS",
+            "ASUSTeK Computer": "ASUS",
             "Atheros Inc.": "Atheros",
             "ATI Technologies Inc": "ATI",
             "Gigabyte Technology Co., Ltd.": "Gigabyte",
             "VIA Technologies, Inc.": "VIA",
-            "ASUSTeK Computer": "ASUS",
             "Intel Corporation": "Intel",
             "Apple Inc.": "Apple",
             "American Megatrends": "AMI?",
@@ -147,8 +148,12 @@ class core:
         }
         self.lspci = ""
         self.lsusb = ""
+        self.moduledrivers = dict()
+        self.displaymanager = ""
         self.getlspci()
         self.getlsusb()
+        self.getmoduledrivers()
+        self.getdisplaymanager()
         self.getinfo()
 
     def printall(self):
@@ -185,7 +190,10 @@ class core:
         currosstr = ' '.join(curroslist).rstrip()
         lang = t[3]
         restofos = ', '.join(t[4])
-        s = "2 {0} ({1}), {2}".format(currosstr, lang, restofos)
+        if restofos:
+            s = "2 {0} ({1}, {2}), {3}".format(currosstr, lang, self.displaymanager, restofos)
+        else:
+            s = "2 {0} ({1}, {2})".format(currosstr, lang, self.displaymanager)
         #print(s)
         return s
 
@@ -298,6 +306,16 @@ class core:
         if not self.lspci:
             p = ["lspci", "-nn"]
             self.lspci = self.runcommand(p)
+    
+    def getmoduledrivers(self):
+        if not self.moduledrivers:
+            files = glob.glob("/sys/bus/pci/devices/*/uevent")
+            for f in files:
+                s = self.getfile(f)
+                m = re.search("DRIVER=(?P<driver>[^\n]*).*PCI_ID=(?P<pci_id>[^\n]*)", s, re.M+re.S)
+                if m:
+                    d = m.groupdict()
+                    self.moduledrivers[d["pci_id"]] = d["driver"]
 
     def getlsusb(self):
         if not self.lsusb:
@@ -329,10 +347,26 @@ class core:
         network = ' ⋮ '.join(netcards)
         return network
 
+    def getdisplaymanager(self):
+        l = list()
+        for env in [os.environ['XDG_CURRENT_DESKTOP'],
+            os.environ['DESKTOP_SESSION'],
+            os.environ['GDMSESSION']]:
+            if not env in l:
+                l.append(env)
+        #print(" ".join(l))
+        self.displaymanager = " ".join(l)
+        #exit()
+
     def getdisplayinfo(self):
-        m = re.compile("VGA[^:]+:\s+(.+)", re.M)
-        match = m.findall(self.lspci)
-        graphics = ' ⋮ '.join(match)
+        l = list()
+        m = re.compile("VGA[^:]+:\s+(.+?)\s+\[(\w+:\w+)\]", re.M)
+        displays = m.findall(self.lspci)
+        #01:00.0 VGA compatible controller [0300]: NVIDIA Corporation G73 [GeForce 7300 GT] [10de:0393] (rev a1)
+        #[('01:00.0 VGA compatible controller [0300]: NVIDIA Corporation G73 [GeForce 7300 GT] ', '[10de:0393]')]
+        for (text, ident) in displays:
+            l.append(text + " [" + ident + "] {" + self.moduledrivers[ident.upper()] + "}")
+        graphics = ' ⋮ '.join(l)
         return graphics
 
     def getcpuinfo(self):
@@ -739,7 +773,7 @@ class osgrubber:
 
     def truncate_titles(self, t):
         """ Trucate title of OS in read_grub() """
-        s = re.sub(',? [^\s]*? Linux', '', t)
+        s = re.sub(',? [^\s]*? Linux.*', '', t)
         s = re.sub('\([^\)]*?\)$|\(loader\)', '', s)
         s = re.sub('\s+', ' ', s).rstrip()
         self.log.debug("Trimmed OS title: {0}".format(s))
@@ -764,19 +798,31 @@ class osgrubber:
             return False
         with open(grub2_fname) as f:
             grub2_cont = f.read()
-        
+
         #Create empty dict with grub menuentry-ies
         dct = dict()
         li = list()
-        regexstr = "menuentry ['\"](?P<title>.*?)['\"].*?set root='\((?P<device>.*?)\)'(?:.*?(?:chainloader.*?\n|(?:linux16|linux)\s(?P<linuxstr>.*?)\n)|.*?)"
+        regexstr = "menuentry ['\"](?P<title>.*?)['\"].*?set root='\(?(?P<device>.*?)\)?'(?:.*?(?:chainloader.*?\n|(?:linux16|linux)\s(?P<linuxstr>.*?)\n)|.*?)"
+
         for m in re.finditer(regexstr, grub2_cont, re.S):
             self.log.debug("Matched grub line: {0}".format(m.groups()))
             l = m.group('linuxstr')
-            if not l == None and ("recovery" in l or "memtest" in l):
-                #Ignore memtest and recovery grub menuentry-ies
+
+            # Match version in linux string
+            if not l == None:
+                mre = re.match(".*vmlinuz-([^\s]*)", l)
+                if mre:
+                    v = mre.group(1)
+                else:
+                    v = ""
+            else:
+                v = ""
+            
+            t = m.group('title')
+            if not l == None and (t == "Ubuntu" or "recovery" in l or "memtest" in l):
+                #Ignore memtest and linux recovery grub menuentry-ies
                 self.log.debug("Skipping this line")
                 continue
-            t = m.group('title')
             if "Recovery" in t:
                 # Ignore windows recovery
                 self.log.debug("Skipping this line")
@@ -785,20 +831,22 @@ class osgrubber:
             
             # Truncate titles
             t = self.truncate_titles(t)
+            ltv = " ".join([t,v])
             
             if not dct.has_key(d):
                 dct[m.group('device')] = list()
             # Keep all the OS in the dictionary
-            dct[m.group('device')].append({'title': t,'linuxstr': l})
+            dct[m.group('device')].append({'title': t,'linuxstr': l, 'version': v})
             # Do not save current OS in the list
             # Do not save more than two OS of the same partition in the list
-            self.log.debug("Checks (not current OS & not more than 2 OS)")
-            if not self.is_currentos(t) and len(dct[d]) < 3:
-                li.append(t)
-            elif not len(dct[d]) < 3:
+            self.log.debug("Checks: append to list if not current OS & not more than 2 OS")
+            if not self.is_currentos(ltv) and len(dct[d]) < 3:
+                self.log.debug("Appending to OS list: {0}".format(ltv))
+                li.append(ltv)
+            elif len(dct[d]) > 2:
                 self.log.debug("More than 2 OS found on device: {0}".format(d))
                 self.morethan2.add(d)
-        
+
         self.oslist = li
         self.osdict = dct
         if self.morethan2:
@@ -817,6 +865,7 @@ class osgrubber:
         currlinver = un[2].replace('.', '\.') #escape dots (regex)
         if re.search(currlinver, osline):
             # If current linux version is found in a grub os line
+            self.log.debug("Matches current OS: {0}".format(osline))
             return True
         return False
 
