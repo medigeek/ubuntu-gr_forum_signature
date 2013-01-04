@@ -75,7 +75,7 @@ log.debug("osgrubber().returnall()")
 
 try:
     from gi.repository import Gtk, Gdk
-except ImportError:
+except (ImportError, RuntimeError):
     log.error("Could not load gtk+ 3 module. Setting text-only output.\n")
     args.text_only = True
 try:
@@ -125,6 +125,7 @@ class core:
             "Accton Technology Corp.": "Accton",
             "Advanced Micro Devices [AMD] nee ATI": "AMD/ATI",
             "Advanced Micro Devices [AMD]": "AMD",
+            "Intel Core Processor Integrated Graphics Controller": "Intel Integrated Graphics",
             "(R)": "",
             "(TM)": "",
             "(r)": "",
@@ -349,13 +350,18 @@ class core:
 
     def getdisplaymanager(self):
         l = list()
-        for env in [os.environ['XDG_CURRENT_DESKTOP'],
-            os.environ['DESKTOP_SESSION'],
-            os.environ['GDMSESSION']]:
-            if not env in l:
-                l.append(env)
+        for env in ['XDG_CURRENT_DESKTOP', 'DESKTOP_SESSION', 'GDMSESSION']:
+            try:
+                e = os.environ[env]
+                if not e in l:
+                    l.append(e)
+            except KeyError:
+                pass
         #print(" ".join(l))
-        self.displaymanager = " ".join(l)
+        if l:
+            self.displaymanager = " ".join(l)
+        else:
+            self.displaymanager = self.unknown
         #exit()
 
     def getdisplayinfo(self):
@@ -774,9 +780,9 @@ class osgrubber:
     def truncate_titles(self, t):
         """ Trucate title of OS in read_grub() """
         s = re.sub(',? [^\s]*? Linux.*', '', t)
-        s = re.sub('\([^\)]*?\)$|\(loader\)', '', s)
+        s = re.sub('\([^\)]*?\)$|\s*?\(loader\)', '', s)
         s = re.sub('\s+', ' ', s).rstrip()
-        self.log.debug("Trimmed OS title: {0}".format(s))
+        self.log.debug("Trimmed OS title: '{0}'".format(s))
         return s
 
     def read_grub(self):
@@ -805,50 +811,56 @@ class osgrubber:
         regexstr = "menuentry ['\"](?P<title>.*?)['\"].*?set root='\(?(?P<device>.*?)\)?'(?:.*?(?:chainloader.*?\n|(?:linux16|linux)\s(?P<linuxstr>.*?)\n)|.*?)"
 
         for m in re.finditer(regexstr, grub2_cont, re.S):
-            self.log.debug("Matched grub line: {0}".format(m.groups()))
+            self.log.debug("*** Matched grub line: {0}".format(m.groups()))
             l = m.group('linuxstr')
+
+            t = m.group('title')
+            if not l == None and (t == "Ubuntu" or "fallback" in l or "ανάκτηση" in l or "recovery" in l or "memtest" in l):
+                #Ignore memtest and linux recovery grub menuentry-ies
+                self.log.debug("Blacklisted, skipping this line")
+                continue
+            if "Recovery" in t:
+                # Ignore windows recovery
+                self.log.debug("Blacklisted, skipping this line")
+                continue
+            d = m.group('device')
 
             # Match version in linux string
             if not l == None:
                 mre = re.match(".*vmlinuz-([^\s]*)", l)
                 if mre:
                     v = mre.group(1)
+                    self.log.debug("Found linux version: '{0}' from '{1}'".format(v, l))
                 else:
                     v = ""
+                    self.log.debug("Could not find linux version from '{0}'".format(l))
             else:
                 v = ""
-            
-            t = m.group('title')
-            if not l == None and (t == "Ubuntu" or "recovery" in l or "memtest" in l):
-                #Ignore memtest and linux recovery grub menuentry-ies
-                self.log.debug("Skipping this line")
-                continue
-            if "Recovery" in t:
-                # Ignore windows recovery
-                self.log.debug("Skipping this line")
-                continue
-            d = m.group('device')
+                self.log.debug("Could not find linux version from '{0}'".format(l))
             
             # Truncate titles
-            t = self.truncate_titles(t)
-            ltv = " ".join([t,v])
+            tx = self.truncate_titles(t)
+            ltv = " ".join([tx,v]).rstrip()
+            self.log.debug("Concatenated title and version: '{0}'".format(ltv))
             
             if not dct.has_key(d):
-                dct[m.group('device')] = list()
+                dct[d] = list()
             # Keep all the OS in the dictionary
-            dct[m.group('device')].append({'title': t,'linuxstr': l, 'version': v})
+            dct[d].append({'title': tx, 'linuxstr': l, 'version': v})
             # Do not save current OS in the list
             # Do not save more than two OS of the same partition in the list
-            self.log.debug("Checks: append to list if not current OS & not more than 2 OS")
+            self.log.debug("Checks: append to OS list if not current OS & not more than 2 OS")
             if not self.is_currentos(ltv) and len(dct[d]) < 3:
-                self.log.debug("Appending to OS list: {0}".format(ltv))
+                self.log.debug("Appending to OS list: '{0}' in device '{1}'".format(ltv, d))
                 li.append(ltv)
-            elif len(dct[d]) > 2:
-                self.log.debug("More than 2 OS found on device: {0}".format(d))
+            elif not len(dct[d]) < 3:
+                self.log.debug("More than 2 OS found on device: {0} -- will not append '{1}' to OS list".format(d, ltv))
                 self.morethan2.add(d)
+            self.log.debug("Current OS list: {0}\nCurrent device {1} dict: {2}\nCurrent 'more than 2 kernels' list: {3}\n".format(li, d, dct[d], self.morethan2))
 
         self.oslist = li
         self.osdict = dct
+        self.log.debug("Final OS list: {0}\nFinal OS dict: {1}\nFinal 'more than 2 kernels' list: {2}\n".format(self.oslist, self.osdict, self.morethan2))
         if self.morethan2:
             mt2 = ' '.join(self.morethan2)
             self.log.warning("More than 2 OS found on device(s): {0}".format(mt2))
@@ -865,7 +877,7 @@ class osgrubber:
         currlinver = un[2].replace('.', '\.') #escape dots (regex)
         if re.search(currlinver, osline):
             # If current linux version is found in a grub os line
-            self.log.debug("Matches current OS: {0}".format(osline))
+            self.log.debug("Matches current OS: '{0}'".format(osline))
             return True
         return False
 
