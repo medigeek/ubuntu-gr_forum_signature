@@ -815,7 +815,7 @@ class osgrubber:
             l = m.group('linuxstr')
 
             t = m.group('title')
-            if not l == None and (t == "Ubuntu" or "fallback" in l or "ανάκτηση" in l or "recovery" in l or "memtest" in l):
+            if not l == None and (t == "Ubuntu" or "Fallback" in t or "ανάκτηση" in t or "fallback" in l or "recovery" in l or "memtest" in l):
                 #Ignore memtest and linux recovery grub menuentry-ies
                 self.log.debug("Blacklisted, skipping this line")
                 continue
