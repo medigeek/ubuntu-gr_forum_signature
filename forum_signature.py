@@ -174,7 +174,8 @@ class core:
         x = self.knowledge()
         y = self.osinfo()
         z = self.specs()
-        text = "{0}\n{1}\n{2}".format(x, y, z)
+        a = "*** WARNING: You are using an outdated version of the program.\n*** WARNING: The new version requires gtk 3. Please upgrade your system, for example to Ubuntu 12.04 and up"
+        text = "{3}\n{0}\n{1}\n{2}".format(x, y, z, a)
         t = self.dicreplace(text)
         return t
 
@@ -448,6 +449,8 @@ class siggui:
         self.iswubi()
         # CHECK if has more than 2 OS on same device partition
         self.hasmorethan2()
+        # Alert the user that they are using an outdated version
+        self.messagedialog("You are using an outdated version of the program!","WARNING: The new version requires gtk 3. Please upgrade your system, for example to Ubuntu 12.04 and up.")
 
     def on_textboxbuf_changed(self, widget):
         (start, end) = self.textboxbuf.get_bounds()
@@ -864,6 +867,7 @@ def main():
     #(osinfo, arch_type, iswubi, lang, self.oslist, self.osdict, self.morethan2)
     log.debug("core(o).returnall()")
     text = core(o, logger=log).returnall()
+    print("*** WARNING: You are using an outdated version of the program.\n*** WARNING: The new version requires gtk 3. Please upgrade your system, for example to Ubuntu 12.04 and up")
     if args.text_only:
         log.debug("Console-only output")
         print(text)
