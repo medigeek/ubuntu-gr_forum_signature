@@ -310,10 +310,11 @@ class core:
     
     def getmoduledrivers(self):
         if not self.moduledrivers:
+            #Alternative: Try using lspci -mm or -vmm or -m, e.g. lspci -vmm -v -nn -d 10de:0393
             files = glob.glob("/sys/bus/pci/devices/*/uevent")
             for f in files:
                 s = self.getfile(f)
-                m = re.search("DRIVER=(?P<driver>[^\n]*).*PCI_ID=(?P<pci_id>[^\n]*)", s, re.M+re.S)
+                m = re.search("DRIVER=(?P<driver>[^\n]*).*?PCI_ID=(?P<pci_id>[^\n]*)", s, re.S)
                 if m:
                     d = m.groupdict()
                     self.moduledrivers[d["pci_id"]] = d["driver"]
@@ -339,7 +340,8 @@ class core:
                 #04:01.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL-8139/8139C/8139C+ [10ec:8139] (rev 10)
                 mp = ":\s(.*{0}:{1}.*)".format(pciids[0][0], pciids[0][1])
                 pcidesc = re.findall(mp, self.lspci, re.M+re.I)
-                append("{0}: {1}".format(name, pcidesc[0]))
+                if pcidesc:
+                    append("{0}: {1}".format(name, pcidesc[0]))
             if usbids:
                 #Bus 002 Device 004: ID 0cf3:1002 Atheros Communications, Inc. TP-Link TL-WN821N v2 [Atheros AR9001U-(2)NG]
                 mu = ":\sID\s({0}:{1}.*)".format(usbids[0][0], usbids[0][1])
@@ -371,7 +373,11 @@ class core:
         #01:00.0 VGA compatible controller [0300]: NVIDIA Corporation G73 [GeForce 7300 GT] [10de:0393] (rev a1)
         #[('01:00.0 VGA compatible controller [0300]: NVIDIA Corporation G73 [GeForce 7300 GT] ', '[10de:0393]')]
         for (text, ident) in displays:
-            l.append(text + " [" + ident + "] {" + self.moduledrivers[ident.upper()] + "}")
+            try:
+                mod = self.moduledrivers[ident.upper()]
+            except KeyError:
+                mod = '' # If no module is found
+            l.append(text + " [" + ident + "] {" + mod + "}")
         graphics = ' ⋮ '.join(l)
         return graphics
 
