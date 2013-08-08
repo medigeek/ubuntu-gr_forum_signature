@@ -125,12 +125,15 @@ class core:
             "Accton Technology Corp.": "Accton",
             "Advanced Micro Devices [AMD] nee ATI": "AMD/ATI",
             "Advanced Micro Devices [AMD]": "AMD",
-            "Intel Core Processor Integrated Graphics Controller": "Intel Integrated Graphics",
+            "Integrated Graphics Controller": "Integrated Graphics",
+            "PCI Express Fast Ethernet controller": "Ethernet",
+            "Wireless LAN Controller": "Wireless",
+            "http://www.": "",
+            "abit.com.tw/": "",
             "(R)": "",
             "(TM)": "",
             "(r)": "",
             "(tm)": "",
-            "     ": " ",
             "  @ ": " ",
         }
         # Array for removing default motherboard vendor values
@@ -301,6 +304,7 @@ class core:
         for key,val in list(self.dic.items()):
             ns = s.replace(key, val)
             s = ns
+        s = re.sub("[ ]+", " ", s) #clear double or triple spaces
         return s
 
     def getlspci(self):
