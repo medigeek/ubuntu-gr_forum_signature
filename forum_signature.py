@@ -347,7 +347,7 @@ class core:
         return network
 
     def getdisplayinfo(self):
-        m = re.compile("(VGA|3D)[^:]+:\s+(.+)", re.M)
+        m = re.compile("(?:VGA|3D)[^:]+:\s+(.+)", re.M)
         match = m.findall(self.lspci)
         graphics = ' ⋮ '.join(match)
         return graphics
