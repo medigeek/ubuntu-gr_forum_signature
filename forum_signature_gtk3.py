@@ -372,7 +372,7 @@ class core:
 
     def getdisplayinfo(self):
         l = list()
-        m = re.compile("VGA[^:]+:\s+(.+?)\s+\[(\w+:\w+)\]", re.M)
+        m = re.compile("(?:VGA|3D)[^:]+:\s+(.+?)\s+\[(\w+:\w+)\]", re.M)
         displays = m.findall(self.lspci)
         #01:00.0 VGA compatible controller [0300]: NVIDIA Corporation G73 [GeForce 7300 GT] [10de:0393] (rev a1)
         #[('01:00.0 VGA compatible controller [0300]: NVIDIA Corporation G73 [GeForce 7300 GT] ', '[10de:0393]')]
