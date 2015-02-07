@@ -512,7 +512,7 @@ class siggui:
             s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Περισσότερα από 2 Λειτουργικά Συστήματα"
             s2 = 'Έχετε περισσότερες από 2 εκδόσεις πυρήνα (kernel) εγκατεστημένες \
 στην ίδια κατάτμηση: {0}\n\
-<a href="http://wiki.ubuntu-gr.org/MoreThan2Kernels">Διαβάστε \
+<a href="http://forum.ubuntu-gr.org/viewtopic.php?f=6&t=15460">Διαβάστε \
 εδώ</a> για περισσότερες πληροφορίες και για οδηγίες αφαίρεσης των επιπλέον πυρήνων.'.format(mt2)
             self.messagedialog(s, s2)
 
@@ -521,8 +521,7 @@ class siggui:
         if self.is_wubi:
             s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Δε συστήνεται η εγκατάσταση μέσω wubi."
             s2 = "Η εγκατάσταση που έχετε έγινε μέσω <span foreground='red'>wubi</span>. \
-Τετοια εγκατάσταση συστήνεται μόνο για δοκιμαστικούς σκοπούς \
-(<a href='http://wiki.ubuntu-gr.org/whynotwubi'>διαβάστε τους λόγους</a>).\n\
+Τετοια εγκατάσταση συστήνεται μόνο για δοκιμαστικούς σκοπούς. \n\
 Διαβάστε στους <a href='http://forum.ubuntu-gr.org/viewtopic.php?f=9&amp;t=859'>\
 οδηγούς/how to/tutorials</a> πώς να κάνετε σωστή εγκατάσταση."
             self.messagedialog(s, s2)
