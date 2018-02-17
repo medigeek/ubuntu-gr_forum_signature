@@ -546,10 +546,10 @@ class siggui:
         # Check if more than two OS present in system.
         if self.more_than_two:
             mt2 = ' '.join(self.more_than_two)
-            s = "<b>ΠΡΟΕΙΔΟΠΟΙΗΣΗ</b>: Περισσότερα από 2 Λειτουργικά Συστήματα"
+            s = "<b>ΕΝΗΜΕΡΩΣΗ</b>: Περισσότερα από 2 Λειτουργικά Συστήματα"
             s2 = 'Έχετε περισσότερες από 2 εκδόσεις πυρήνα (kernel) εγκατεστημένες \
 στην ίδια κατάτμηση: {0}\n\
-<a href="http://wiki.ubuntu-gr.org/MoreThan2Kernels">Διαβάστε \
+<a href="https://forum.ubuntu-gr.org/viewtopic.php?f=9&t=31328">Διαβάστε \
 εδώ</a> για περισσότερες πληροφορίες και για οδηγίες αφαίρεσης των επιπλέον πυρήνων.'.format(mt2)
             self.messagedialog(s, s2)
 
